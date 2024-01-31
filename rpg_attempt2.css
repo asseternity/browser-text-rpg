@@ -111,13 +111,13 @@ button:hover {
 }
 
 .log {
+    overflow: scroll;
     padding: 10px;
     background-color: var(--purple2);
     grid-column: 5 / 6;
 }
 
 .log_inside {
-    overflow: scroll;
     height: 250px;
     font-size: 100%;
 }
