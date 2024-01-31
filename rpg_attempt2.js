@@ -159,18 +159,20 @@ let JanitorSpecials = ['Normal Attack', 'Bucket Splash'];
 let AccountantSpecials = ['Normal Attack', 'Book Toss'];
 let attackIndex = 0;
 function switchAttack(char) {
-    if (char instanceof Janitor) {
-        attackIndex = (attackIndex + 1) % JanitorSpecials.length;
-        char.specialAttack = JanitorSpecials[attackIndex];
-        let entry = document.createElement('p');
-        entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
-        log_window.appendChild(entry);
-    } else if (char instanceof Accountant) {
-        attackIndex = (attackIndex + 1) % AccountantSpecials.length;
-        char.specialAttack = AccountantSpecials[attackIndex];
-        let entry = document.createElement('p');
-        entry.textContent = `${char.name} attacks ${char.name}! The attack misses!`;
-        log_window.appendChild(entry);
+    if (currentStoryPoint > 0) {
+        if (char instanceof Janitor) {
+            attackIndex = (attackIndex + 1) % JanitorSpecials.length;
+            char.specialAttack = JanitorSpecials[attackIndex];
+            let entry = document.createElement('p');
+            entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
+            log_window.appendChild(entry);
+        } else if (char instanceof Accountant) {
+            attackIndex = (attackIndex + 1) % AccountantSpecials.length;
+            char.specialAttack = AccountantSpecials[attackIndex];
+            let entry = document.createElement('p');
+            entry.textContent = `${char.name} attacks ${char.name}! The attack misses!`;
+            log_window.appendChild(entry);
+        }
     }
 }
 special_button.addEventListener('click', () => { switchAttack(char1) });
@@ -284,6 +286,7 @@ function formMaker(nextStory) {
         updateNames(answer);
         console.log('After updateNames:', storyStrings)
         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild); }
+        currentStoryPoint++;
         story[nextStory](0);
     })
 }
