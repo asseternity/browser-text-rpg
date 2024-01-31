@@ -133,7 +133,7 @@ button:hover {
         min-height: 100%;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: 50px 370px 200px 60px;
+        grid-template-rows: 50px 500px 250px 60px;
     }
     p:first-child {
         margin-top: 0;
