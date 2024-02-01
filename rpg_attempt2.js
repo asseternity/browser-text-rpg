@@ -1,6 +1,6 @@
 // initialize spaces and buttons
 let top_bar = document.querySelector('.top_bar');
-let log_window = document.querySelector('.log_inside');
+let log_window = document.querySelector('.log');
 let main_window = document.querySelector('.main_window');
 let image_window = document.querySelector('.image_window');
 let menu_window = document.querySelector('.menu');
@@ -43,15 +43,15 @@ Character.prototype.attack = function(selectedEnemy) {
                         extraDamage = +4;
                         break;
                     case 'Book Toss':
-                        extraComment = ' with the Book Toss (+2 accuracy, but -2 damage if hits)';
-                        extraAttack = +2;
-                        extraDamage = -4;
+                        extraComment = ' with the Book Toss (-4 accuracy, but +6 damage if hits)';
+                        extraAttack = -4;
+                        extraDamage = +6;
                         break;
                 }
                 if (attackRoll + extraAttack > selectedEnemy.armorClass) {
                     selectedEnemy.currentHP -= attackRoll + extraAttack + extraDamage - selectedEnemy.armorClass;
                     let entry = document.createElement('p');
-                    entry.textContent = `${this.name} attacks ${selectedEnemy.name}${extraComment}! The attack hits and deals ${attackRoll + extraDamage - selectedEnemy.armorClass} damage!`;
+                    entry.textContent = `${this.name} attacks ${selectedEnemy.name}${extraComment}! The attack hits and deals ${attackRoll + extraAttack + extraDamage - selectedEnemy.armorClass} damage!`;
                     log_window.appendChild(entry);
                     isHeDead(selectedEnemy);
                     while (image_window.firstChild) { image_window.removeChild(image_window.firstChild) };
@@ -89,15 +89,15 @@ function Accountant(name, attackBonus, armorClass, currentHP, maxHP, specialAtta
 Object.setPrototypeOf(Janitor.prototype, Character.prototype);
 Object.setPrototypeOf(Accountant.prototype, Character.prototype); 
 // character object
-let char1 = new Janitor('Asset', 13, 15, 100, 100, 'Normal Attack'); 
+let char1 = new Character('Asset', 13, 15, 100, 100, 'Normal Attack'); 
 // enemies objects
 let goblin_grunt = new Monster('Goblin', 10, 20, 20);
 let goblin_fighter = new Monster('Goblin Fighter', 13, 25, 25);
 let goblin_shaman = new Monster('Goblin Shaman', 16, 30, 30);
 let goblin_chieftain = new Monster('Goblin Chieftain', 17, 40, 40);
 let wizard = new Monster('Half Dead Old Guy', 10, 5, 5);
-let imp1 = new Monster('Imp', 5, 5, 5);
-let imp2 = new Monster('Imp', 5, 5, 5);
+let imp1 = new Monster('Red Imp', 5, 5, 5);
+let imp2 = new Monster('Blue Imp', 5, 5, 5);
 let enemies = [];
 let enemyToAttack;
 // change enemies function
@@ -170,14 +170,13 @@ function switchAttack(char) {
             attackIndex = (attackIndex + 1) % AccountantSpecials.length;
             char.specialAttack = AccountantSpecials[attackIndex];
             let entry = document.createElement('p');
-            entry.textContent = `${char.name} attacks ${char.name}! The attack misses!`;
+            entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
             log_window.appendChild(entry);
         }
     }
 }
-special_button.addEventListener('click', () => { switchAttack(char1) });
 //draw player stats
-menu_window.textContent = `You are a person. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
+menu_window.textContent = `You are a person. Your class is unknown. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
 //start battle
 function startBattle(...encounterEnemies) {
     encounterEnemies.forEach((thisEnemy) => {
@@ -228,6 +227,7 @@ function dialogueChoice(...choices) {
         entry.textContent = currentChoice.text;
         main_window.appendChild(entry);
         entry.addEventListener('click', () => {
+            currentChoice.modifier();
             while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
             currentChoice.outcome(0);
             currentStoryPoint = currentChoice.storyPoint;   
@@ -238,14 +238,6 @@ function dialogueChoice(...choices) {
 // Incorporate a new intro, before the current one
 let creation1 = 'You walk around, suddenly feeling nostalgic and reminiscing about your life.';
 let creation2 = 'First of all, what did your parents name you?';
-// let creation3 = `${char1.name}, exactly. Such a pretty name.`;
-// let creation4 = 'You had an ordinary childhood. Sure it was spent in poverty, but then you went on to find a job of your own. What was it?.';
-// let creation5;
-// if (char1 instanceof Janitor) {
-//     creation5 = `Janitor, of course. Well, someone's gotta do it. In any case, you are on your first mission for your new employer.`
-// } else if (char1 instanceof Accountant) {
-//     creation5 = `Accountant. How fun. In any case, you are on your first mission for your new employer.`
-// }
 let creationStory = [creation1, creation2];
 // Add the new intro to the story
 function initializeCreation(chapterIndex) {
@@ -258,6 +250,7 @@ function initializeCreation(chapterIndex) {
     if (chapterIndex+1 > creationStory.length) {
         formMaker((story.findIndex(i => i == initializeCreation) + 1));
     }
+    // <-- THIS CODE CONTINUES TO NEXT SECTION IF THERE ISN'T A FORM, BATTLE OR CHOICE -->
     // if (chapterIndex+1 > creationStory.length) {
     //     let oldText = main_window.querySelectorAll('p');
     //     oldText.forEach(entry => {
@@ -282,26 +275,63 @@ function formMaker(nextStory) {
         event.preventDefault();
         answer = input.value;
         char1.name = answer;
-        console.log('Before updateNames:', storyStrings);
         updateNames(answer);
-        console.log('After updateNames:', storyStrings)
         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild); }
         currentStoryPoint++;
         story[nextStory](0);
     })
 }
 function updateNames(answer) {
-    console.log(answer);
     for (let i = 0; i < storyStrings.length; i++) {
         for (let j = 0; j < storyStrings[i].length; j++) {
-            storyStrings[i][j] = storyStrings[i][j].replace(`Dude`, answer);
+            storyStrings[i][j] = storyStrings[i][j].replaceAll(`Dude`, answer);
         }
     }
     menu_window.textContent = menu_window.textContent.replace('a person', answer);
 }
 // Only spawn the next thing and remove the div once the submit happens
 // Lead each class choice to an object creator function?
-
+// class selection story
+let creationB1 = `Dude, exactly. Such a pretty name.`;
+let creationB2 = `You had an ordinary childhood.`;
+let creationB3 = `Sure it was spent in poverty, but then you went on to find a job of your own. What was it?.`;
+// let creation5;
+// if (char1 instanceof Janitor) {
+//     creation5 = `Janitor, of course. Well, someone's gotta do it. In any case, you are on your first mission for your new employer.`
+// } else if (char1 instanceof Accountant) {
+//     creation5 = `Accountant. How fun. In any case, you are on your first mission for your new employer.`
+// }
+let creationStoryB = [creationB1, creationB2];
+function initializeCreationB(chapterIndex) {
+    let entry = document.createElement('p');
+    entry.textContent = creationStoryB[chapterIndex];
+    main_window.appendChild(entry);
+    let choice1 = { 
+        text: 'I struggled in life and became a janitor.', 
+        outcome: initializeIntro, 
+        storyPoint: story.findIndex(i => i == initializeIntro), 
+        modifier: function() { 
+            char1 = new Janitor(char1.name, 13, 15, 100, 100, 'Normal Attack'); 
+            menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are a Janitor.');
+            special_button.addEventListener('click', () => { switchAttack(char1) });
+        } 
+    };
+    let choice2 = { 
+        text: `It's not fun, but it pays the bills... I'm an accountant`, 
+        outcome: initializeIntro, 
+        storyPoint: story.findIndex(i => i == initializeIntro), 
+        modifier: function() { 
+            char1 = new Accountant(char1.name, 13, 15, 100, 100, 'Normal Attack'); 
+            menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are an Accountant.');
+            special_button.addEventListener('click', () => { switchAttack(char1) }); } 
+    };
+    if (chapterIndex+1 <= creationStoryB.length) {
+        continuer(story.findIndex(i => i == initializeCreationB), chapterIndex+1);
+    }
+    if (chapterIndex >= creationStoryB.length) {
+        dialogueChoice(choice1, choice2);
+    }
+};
 // [PART 1] intro - story strings
 let intro1 = `Dude travels through a dark forest. Spindly trees grow around them.`;
 let intro2 = `Suddenly, Dude hears a noise up in the trees. It sounds like cackling.`;
@@ -331,8 +361,18 @@ function initializeIntroB(chapterIndex) {
     let entry = document.createElement('p');
     entry.textContent = introsB[chapterIndex];
     main_window.appendChild(entry);
-    let choice1 = { text: 'Of course, hang in there!', outcome: wizardAgreedToHelp, storyPoint: 2 };
-    let choice2 = { text: '*Think*: I wonder if he has some loot.', outcome: wizardLooted , storyPoint: 3 };
+    let choice1 = { 
+        text: 'Of course, hang in there!', 
+        outcome: wizardAgreedToHelp, 
+        storyPoint: story.findIndex(i => i == wizardAgreedToHelp),
+        modifier: function() { let wizardStatus = 'agreedToHelp' } 
+    };
+    let choice2 = { 
+        text: '*Think*: I wonder if he has some loot.', 
+        outcome: wizardLooted, 
+        storyPoint: story.findIndex(i => i == wizardLooted), 
+        modifier: function() { let wizardStatus = 'killed' }
+     };
     if (chapterIndex+1 <= introsB.length) {
         continuer(story.findIndex(i => i == initializeIntroB), chapterIndex+1);
     }
@@ -382,8 +422,8 @@ function wizardKilled(chapterIndex) {
     }
 }
 // array of initializers
-let storyStrings = [creationStory, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory];
-let story = [initializeCreation, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled];
+let storyStrings = [creationStory, creationStoryB, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory];
+let story = [initializeCreation, initializeCreationB, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled];
 let currentStoryPoint = 0;
 // TESTER. start game
 initializeCreation(0);

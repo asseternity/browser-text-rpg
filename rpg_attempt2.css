@@ -17,7 +17,7 @@ html, body {
     min-height: 100%;
     display: grid;
     grid-template-columns: 2fr 2fr 2fr 2fr 3fr;
-    grid-template-rows: 70px 1fr 1fr 70px;
+    grid-template-rows: 70px 450px 1fr 70px;
 }
 
 .top_bar {
@@ -115,11 +115,6 @@ button:hover {
     padding: 10px;
     background-color: var(--purple2);
     grid-column: 5 / 6;
-}
-
-.log_inside {
-    height: 250px;
-    font-size: 100%;
 }
 
 .menu {
