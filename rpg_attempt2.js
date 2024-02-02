@@ -19,16 +19,31 @@ function Character(name, attackBonus, armorClass, currentHP, maxHP, specialAttac
     this.specialAttack = specialAttack;
 }
 
-function Monster(name, armorClass, currentHP, maxHP) {
+function Monster(name, armorClass, currentHP, maxHP, status) {
     this.name = name;
     this.armorClass = armorClass;
     this.currentHP = currentHP;
     this.maxHP = maxHP;
+    this.status = status;
 }
 // hero.prototype attack method
 Character.prototype.attack = function(selectedEnemy) {
     if (enemies.length !== 0) {
         if (selectedEnemy !== undefined) {
+            enemies.forEach(enemy => {
+                if (enemy.status == 'burning') {
+                    enemy.currentHP = enemy.currentHP - 5;
+                    isHeDead(enemy); 
+                    let entry = document.createElement('p');
+                    entry.textContent = `${enemy.name} is burning for 5 damage!`;
+                    log_window.appendChild(entry);
+                }
+            });
+            while (image_window.firstChild) { image_window.removeChild(image_window.firstChild) };
+            listEnemies();
+            enemies.forEach(enemy => {
+                enemy.status = '';
+            })
             if (selectedEnemy.currentHP > 0) {
                 let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus);
                 let extraComment = '';
@@ -47,6 +62,16 @@ Character.prototype.attack = function(selectedEnemy) {
                         extraAttack = -4;
                         extraDamage = +6;
                         break;
+                    case 'Capoiera Kick':
+                        extraComment = ' with the Capoiera Kick (-4 accuracy, but stuns the target)';
+                        extraAttack = -4;
+                        if (attackRoll + extraAttack > selectedEnemy.armorClass) { selectedEnemy.status = 'stunned'; }
+                        break;
+                    case 'Flaming Lasso':
+                        extraComment = ' with the Flaming Lasso (-4 accuracy, but sets target on fire for one turn)';
+                        extraAttack = -4;
+                        if (attackRoll + extraAttack > selectedEnemy.armorClass) { selectedEnemy.status = 'burning'; }
+                        break;                        
                 }
                 if (attackRoll + extraAttack > selectedEnemy.armorClass) {
                     selectedEnemy.currentHP -= attackRoll + extraAttack + extraDamage - selectedEnemy.armorClass;
@@ -63,9 +88,15 @@ Character.prototype.attack = function(selectedEnemy) {
                 }
                 if (enemies.length !== 0) { 
                     enemies.forEach(enemy => {
-                        enemy.counterattack();
+                        if (enemy.status !== 'stunned') {
+                            enemy.counterattack(); 
+                        } else if (enemy.status == 'stunned') {
+                            let entry = document.createElement('p');
+                            entry.textContent = `${enemy.name} is stunned!`;
+                            log_window.appendChild(entry);
+                        }
                     }); 
-                };
+                }
             }
         } else {
             let entry = document.createElement('p');
@@ -85,19 +116,23 @@ function Janitor(name, attackBonus, armorClass, currentHP, maxHP, specialAttack)
 function Accountant(name, attackBonus, armorClass, currentHP, maxHP, specialAttack) {
     Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack);
 }
+function Dancer(name, attackBonus, armorClass, currentHP, maxHP, specialAttack) {
+    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack);
+}
 // setting prototypes
 Object.setPrototypeOf(Janitor.prototype, Character.prototype);
 Object.setPrototypeOf(Accountant.prototype, Character.prototype); 
+Object.setPrototypeOf(Dancer.prototype, Character.prototype); 
 // character object
-let char1 = new Character('Asset', 13, 15, 100, 100, 'Normal Attack'); 
+let char1 = new Character('Dude', 13, 15, 100, 100, 'Normal Attack'); 
 // enemies objects
-let goblin_grunt = new Monster('Goblin', 10, 20, 20);
-let goblin_fighter = new Monster('Goblin Fighter', 13, 25, 25);
-let goblin_shaman = new Monster('Goblin Shaman', 16, 30, 30);
-let goblin_chieftain = new Monster('Goblin Chieftain', 17, 40, 40);
-let wizard = new Monster('Half Dead Old Guy', 10, 5, 5);
-let imp1 = new Monster('Red Imp', 5, 5, 5);
-let imp2 = new Monster('Blue Imp', 5, 5, 5);
+let goblin_grunt = new Monster('Goblin', 10, 20, 20, '');
+let goblin_fighter = new Monster('Goblin Fighter', 13, 25, 25, '');
+let goblin_shaman = new Monster('Goblin Shaman', 16, 30, 30, '');
+let goblin_chieftain = new Monster('Goblin Chieftain', 17, 40, 40, '');
+let wizard = new Monster('Half Dead Old Guy', 10, 5, 5, '');
+let imp1 = new Monster('Red Imp', 5, 5, 5, '');
+let imp2 = new Monster('Blue Imp', 5, 5, 5, '');
 let enemies = [];
 let enemyToAttack;
 // change enemies function
@@ -157,6 +192,7 @@ Monster.prototype.counterattack = function() {
 // special button that switches attack modes
 let JanitorSpecials = ['Normal Attack', 'Bucket Splash'];
 let AccountantSpecials = ['Normal Attack', 'Book Toss'];
+let DancerSpecials = ['Normal Attack', 'Capoiera Kick', 'Flaming Lasso'];
 let attackIndex = 0;
 function switchAttack(char) {
     if (currentStoryPoint > 0) {
@@ -169,6 +205,12 @@ function switchAttack(char) {
         } else if (char instanceof Accountant) {
             attackIndex = (attackIndex + 1) % AccountantSpecials.length;
             char.specialAttack = AccountantSpecials[attackIndex];
+            let entry = document.createElement('p');
+            entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
+            log_window.appendChild(entry);
+        } else if (char instanceof Dancer) {
+            attackIndex = (attackIndex + 1) % DancerSpecials.length;
+            char.specialAttack = DancerSpecials[attackIndex];
             let entry = document.createElement('p');
             entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
             log_window.appendChild(entry);
@@ -317,7 +359,7 @@ function initializeCreationB(chapterIndex) {
         } 
     };
     let choice2 = { 
-        text: `It's not fun, but it pays the bills... I'm an accountant`, 
+        text: `It's not fun, but it pays the bills... I'm an accountant.`, 
         outcome: initializeIntro, 
         storyPoint: story.findIndex(i => i == initializeIntro), 
         modifier: function() { 
@@ -325,11 +367,20 @@ function initializeCreationB(chapterIndex) {
             menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are an Accountant.');
             special_button.addEventListener('click', () => { switchAttack(char1) }); } 
     };
+    let choice3 = { 
+        text: `I channelled my struggles into my art. I am... a dancer!`, 
+        outcome: initializeIntro, 
+        storyPoint: story.findIndex(i => i == initializeIntro), 
+        modifier: function() { 
+            char1 = new Dancer(char1.name, 13, 15, 100, 100, 'Normal Attack'); 
+            menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are a Dancer.');
+            special_button.addEventListener('click', () => { switchAttack(char1) }); } 
+    };
     if (chapterIndex+1 <= creationStoryB.length) {
         continuer(story.findIndex(i => i == initializeCreationB), chapterIndex+1);
     }
     if (chapterIndex >= creationStoryB.length) {
-        dialogueChoice(choice1, choice2);
+        dialogueChoice(choice1, choice2, choice3);
     }
 };
 // [PART 1] intro - story strings
