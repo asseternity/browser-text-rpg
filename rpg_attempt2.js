@@ -7,16 +7,20 @@ let menu_window = document.querySelector('.menu');
 let button_window = document.querySelector('.button_window');
 let attack_button = document.querySelector('#attackButton');
 let special_button = document.querySelector('#specialButton');
-let talk_button = document.querySelector('#talkButton');
+let inventory_button = document.querySelector('#inventoryButton');
 let trade_button = document.querySelector('#tradeButton');
 // object constructor functions
-function Character(name, attackBonus, armorClass, currentHP, maxHP, specialAttack) {
+function Character(name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory) {
     this.name = name;
     this.attackBonus = attackBonus;
     this.armorClass = armorClass;
     this.currentHP = currentHP;
     this.maxHP = maxHP;
     this.specialAttack = specialAttack;
+    this.equippedWeapon = '';
+    this.equippedArmor = '';
+    this.equippedMisc = '';
+    this.inventory = [];
 }
 
 function Monster(name, armorClass, currentHP, maxHP, status) {
@@ -45,7 +49,7 @@ Character.prototype.attack = function(selectedEnemy) {
                 enemy.status = '';
             })
             if (selectedEnemy.currentHP > 0) {
-                let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus);
+                let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus + this.equippedWeapon.itemAttack);
                 let extraComment = '';
                 let extraAttack = 0;
                 let extraDamage = 0;
@@ -110,21 +114,21 @@ Character.prototype.attack = function(selectedEnemy) {
     }
 }
 // character classes
-function Janitor(name, attackBonus, armorClass, currentHP, maxHP, specialAttack) {
-    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack);
+function Janitor(name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory) {
+    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory);
 }
-function Accountant(name, attackBonus, armorClass, currentHP, maxHP, specialAttack) {
-    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack);
+function Accountant(name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory) {
+    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory);
 }
-function Dancer(name, attackBonus, armorClass, currentHP, maxHP, specialAttack) {
-    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack);
+function Dancer(name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory) {
+    Character.call(this, name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory);
 }
 // setting prototypes
 Object.setPrototypeOf(Janitor.prototype, Character.prototype);
 Object.setPrototypeOf(Accountant.prototype, Character.prototype); 
 Object.setPrototypeOf(Dancer.prototype, Character.prototype); 
 // character object
-let char1 = new Character('Dude', 13, 15, 100, 100, 'Normal Attack'); 
+let char1 = new Character('Dude', 13, 15, 100, 100, 'Normal Attack', '', '', '', []); 
 // enemies objects
 let goblin_grunt = new Monster('Goblin', 10, 20, 20, '');
 let goblin_fighter = new Monster('Goblin Fighter', 13, 25, 25, '');
@@ -179,7 +183,7 @@ Monster.prototype.counterattack = function() {
     let attackRoll =  Math.floor((Math.random() * 20) + 1);
     if (attackRoll > char1.armorClass) {
         char1.currentHP -= attackRoll - char1.armorClass;
-        menu_window.textContent = `You are ${char1.name}. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
+        menuUpdater();
         let entry = document.createElement('p');
         entry.textContent = `${this.name} attacks ${char1.name}! The attack hits and deals ${attackRoll - char1.armorClass} damage!`;
         log_window.appendChild(entry);
@@ -246,6 +250,165 @@ function isBattleOver(battleResult) {
         button_window.removeChild(trade_button);
     }
 }
+// ---inventory system---
+// create a dialog window when we click on inventory
+let inventoryDialog = document.createElement('dialog');
+inventoryDialog.setAttribute('style','max-width:600px;')
+inventoryDialog.innerHTML = `
+    <button id='closeButton' style='margin-left:500px;font-size:80%;'>Close</button>
+    <div id='inventoryBox'>
+        <div id='equippedBox'>
+            Equipped weapon: <span id='equippedWeaponBox'></span>
+            <br>
+            Equipped armor: <span id='equippedArmorBox'></span>
+            <br>
+            Equipped misc: <span id='equippedMiscBox'></span>
+        </div>
+        <br>
+        <br>
+        <div id='allBox'>
+            Inventory:
+            <ul id='allList'>
+            </ul>
+        </div>
+    </div>
+`;
+document.body.appendChild(inventoryDialog);
+inventory_button.addEventListener('click', () => {
+    inventoryDialog.showModal();
+    let closeButton = document.querySelector('#closeButton');
+    closeButton.addEventListener('click', () => {
+        inventoryDialog.close();
+    })
+})
+// grab elements from dialog
+let equippedWeaponBox = document.querySelector('#equippedWeaponBox');
+let equippedArmorBox = document.querySelector('#equippedArmorBox');
+let equippedMiscBox = document.querySelector('#equippedMiscBox');
+let allList = document.querySelector('#allList')
+// to character, add the following keys: equippedWeapon, equippedArmor, equippedMisc, inventory = []
+// let allItems = array of item objects
+// the item object will have keys: type (weapon, armor or misc); itemAttack; itemArmor
+function newItem(name, type, itemAttack, itemArmor, id) {
+    return {
+        name: name,
+        type: type,
+        itemAttack: itemAttack,
+        itemArmor: itemArmor,
+        id: id
+    }
+}
+let magicSword = newItem('Magic Sword', 'weapon', 20, 0, 'n1');
+let magicArmor = newItem('Magic Armor', 'armor', 0, 2, 'n2');
+let magicRing = newItem('Magic Ring', 'misc', 1, 1, 'n3');
+let ultraSword = newItem('Ultra Sword', 'weapon', 40, 0, 'n4');
+let ultraArmor = newItem('Ultra Armor', 'armor', 0, 4, 'n5');
+let ultraRing = newItem('Ultra Ring', 'misc', 2, 2, 'n6');
+// when an object is grabbed, splice it from allItems and += it to char1.inventory
+function grabItem(item) {
+    char1.inventory.push(item);
+    let itemBullet = document.createElement('li')
+    itemBullet.textContent = `${item.name}, ${item.type}. Attack bonus: ${item.itemAttack}. Armor bonus: ${item.itemArmor}.`
+    allList.appendChild(itemBullet);
+    let equipButton = document.createElement('button');
+    equipButton.addEventListener('click', () => equipItem(item));
+    equipButton.textContent = 'Equip';
+    equipButton.setAttribute('style', 'font-size: 70%;');
+    equipButton.setAttribute('id', `${item.id}`);
+    allList.appendChild(equipButton);
+}
+// when an object is equipped, splice it from char1.inventory and make equippedWeapon = this item object
+function equipItem(item) {
+    if (char1.inventory.includes(item)) {
+        switch (item.type) {
+            case 'weapon':
+                if (char1.equippedWeapon == '') {
+                    char1.equippedWeapon = item;
+                    char1.armorClass = char1.armorClass + char1.equippedWeapon.itemArmor;
+                    equippedWeaponBox.textContent = `${item.name}`;
+                    let equipButton = document.querySelector(`#${item.id}`);
+                    equipButton.textContent = 'Unequip';
+                    equipButton.removeEventListener('click', () => equipItem(item));
+                    equipButton.addEventListener('click', () => unequipItem(item));   
+                    menuUpdater();         
+                } else {
+                    // console.log('ERROR: please unequip your current item first')
+                }
+                break;
+            case 'armor':
+                if (char1.equippedArmor == '') {
+                    char1.equippedArmor = item;
+                    char1.armorClass = char1.armorClass + char1.equippedArmor.itemArmor;
+                    equippedArmorBox.textContent = `${item.name}`;
+                    let equipButton = document.querySelector(`#${item.id}`);
+                    equipButton.textContent = 'Unequip';
+                    equipButton.removeEventListener('click', () => equipItem(item));
+                    equipButton.addEventListener('click', () => unequipItem(item));   
+                    menuUpdater();         
+                } else {
+                    // console.log('ERROR: please unequip your current item first')
+                }
+                break;
+            case 'misc':
+                if (char1.equippedMisc == '') {
+                    char1.equippedMisc = item;
+                    char1.armorClass = char1.armorClass + char1.equippedMisc.itemArmor;
+                    equippedMiscBox.textContent = `${item.name}`;
+                    let equipButton = document.querySelector(`#${item.id}`);
+                    equipButton.textContent = 'Unequip';
+                    equipButton.removeEventListener('click', () => equipItem(item));
+                    equipButton.addEventListener('click', () => unequipItem(item));   
+                    menuUpdater();         
+                } else {
+                    // console.log('ERROR: please unequip your current item first')
+                }
+                break;
+        }
+    } else {
+        // console.log('ERROR: you do not have this item in your inventory')
+    }
+}
+// when an item is unequipped, make equippedWeapon = '' and push the item object to char1.inventory
+function unequipItem(item) {
+    if (char1.equippedWeapon == item || char1.equippedArmor == item || char1.equippedMisc == item) {
+        if (char1.equippedWeapon == item) {
+            char1.armorClass = char1.armorClass - char1.equippedWeapon.itemArmor;
+            char1.equippedWeapon = '';
+            equippedWeaponBox.textContent = ``;
+        } else if (char1.equippedArmor == item) {
+            char1.armorClass = char1.armorClass - char1.equippedArmor.itemArmor;
+            char1.equippedArmor = '';
+            equippedArmorBox.textContent = ``;
+        } else if (char1.equippedMisc == item) {
+            char1.armorClass = char1.armorClass - char1.equippedMisc.itemArmor;
+            char1.equippedMisc = '';
+            equippedMiscBox.textContent = ``;
+        }
+        menuUpdater();
+        let equipButton = document.querySelector(`#${item.id}`);
+        equipButton.textContent = 'Equip';
+        equipButton.removeEventListener('click', () => unequipItem(item));
+        equipButton.addEventListener('click', () => equipItem(item));
+    } else {
+        // console.log('ERROR: this item is not equipped;')
+    }
+}
+// finally, in the attack method, add references to this.equippedWeapon.itemAttack
+// when an item is equipped, recalculate this.armorClass and redraw the menu screen
+// add DOM manipulation interface
+
+// ---menu text updater function---
+function menuUpdater() {
+    if (char1 instanceof Janitor) {
+        menu_window.textContent = `You are ${char1.name}. Your are a Janitor. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
+    } else if (char1 instanceof Accountant) {
+        menu_window.textContent = `You are ${char1.name}. Your are an Accountant. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
+    } else if (char1 instanceof Dancer) {
+        menu_window.textContent = `You are ${char1.name}. Your are a Dancer. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
+    } else {
+        menu_window.textContent = `You are ${char1.name}. Your class is unknown. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
+    }
+}
 
 // ---story logic section---
 // confirm next step with an enter press
@@ -256,10 +419,17 @@ function continuer(currentInitializer, nextIndex) {
     let pressSomething = document.createElement('button');
     pressSomething.textContent = `Click here to continue.`;
     main_window.appendChild(pressSomething);
-    pressSomething.addEventListener(`click`, () => {
+    pressSomething.focus();
+    function continuerHandlePress() {
         story[currentInitializer](nextIndex);
         main_window.removeChild(pressSomething);
-    });
+    }
+    pressSomething.addEventListener(`click`, continuerHandlePress);
+    pressSomething.addEventListener('keydown', (event) => {
+        if (event.key == 'Enter') {
+            continuerHandlePress();
+        }
+    })
 }
 //dialogue system
 function dialogueChoice(...choices) {
