@@ -49,7 +49,17 @@ Character.prototype.attack = function(selectedEnemy) {
                 enemy.status = '';
             })
             if (selectedEnemy.currentHP > 0) {
-                let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus + this.equippedWeapon.itemAttack);
+                let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus);
+                if (char1.equippedWeapon !== '') {
+                    attackRoll =+ this.equippedWeapon.itemAttack;
+                }
+                if (char1.equippedArmor !== '') {
+                    attackRoll =+ this.equippedArmor.itemAttack;
+                }
+                if (char1.equippedMisc !== '') {
+                    attackRoll =+ this.equippedMisc.itemAttack;
+                }
+                console.log(attackRoll)
                 let extraComment = '';
                 let extraAttack = 0;
                 let extraDamage = 0;
@@ -128,7 +138,7 @@ Object.setPrototypeOf(Janitor.prototype, Character.prototype);
 Object.setPrototypeOf(Accountant.prototype, Character.prototype); 
 Object.setPrototypeOf(Dancer.prototype, Character.prototype); 
 // character object
-let char1 = new Character('Dude', 13, 15, 100, 100, 'Normal Attack', '', '', '', []); 
+let char1 = new Character('Dude', 25, 15, 100, 100, 'Normal Attack', '', '', '', []); 
 // enemies objects
 let goblin_grunt = new Monster('Goblin', 10, 20, 20, '');
 let goblin_fighter = new Monster('Goblin Fighter', 13, 25, 25, '');
@@ -304,6 +314,9 @@ let magicRing = newItem('Magic Ring', 'misc', 1, 1, 'n3');
 let ultraSword = newItem('Ultra Sword', 'weapon', 40, 0, 'n4');
 let ultraArmor = newItem('Ultra Armor', 'armor', 0, 4, 'n5');
 let ultraRing = newItem('Ultra Ring', 'misc', 2, 2, 'n6');
+let rustySword = newItem('Rusty Sword', 'weapon', 1, 0, 'n7');
+let rustyArmor = newItem('Rusty Armor', 'armor', 0, 1, 'n8');
+let goldRing = newItem('Gold Ring', 'misc', 0, 1, 'n9');
 // when an object is grabbed, splice it from allItems and += it to char1.inventory
 function grabItem(item) {
     char1.inventory.push(item);
@@ -409,7 +422,90 @@ function menuUpdater() {
         menu_window.textContent = `You are ${char1.name}. Your class is unknown. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
     }
 }
+// ---map system--
+// draw a bunch of squares in the map_area in a square
+// it should activate in free roam mode, and be able to alternate between 'story' and 'exploration'
+// so it should be a function: explorationModeActivator(tileset)
+// tileset is an object with the info on how many squares to generate
+// what's on the squares, what events and icons, etc
+// for now, a function explorationModeActivator that: 
+function explorationModeActivator() {
+// (1) clears the screen entirely
+    while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
+    while (log_window.firstChild) {log_window.removeChild(log_window.firstChild)};
+    while (image_window.firstChild) {image_window.removeChild(image_window.firstChild)};
+// (2) asks you: READY TO FREE ROAM?
+    let entry = document.createElement('p');
+    entry.textContent = 'Time to explore the surroundings. Am I ready?'
+    main_window.appendChild(entry);
+    let button = document.createElement('button');
+    button.textContent = 'I am ready!'
+    main_window.appendChild(button);
+    button.addEventListener('click', () => {
+        explorationGo();
+    })
+}
+// (3) once you click yes, draws squares in the map_area
+function explorationGo() {
+    while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
+    let board = document.createElement('div');
+    board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:grid; grid-template-columns: repeat(6, 25px);')
+    image_window.appendChild(board);
+    for (let i = 0; i < 126; i++) {
+        let tile = document.createElement('div');
+        tile.setAttribute('style','padding:5px;border:1px solid white;height:15px;width:15px;');
+        tile.setAttribute('id', `tile${i}`);
+        board.appendChild(tile);
+    }
+// (4) circle inside the squares
+    let circle = document.createElement('div');
+    circle.setAttribute('style','position:absolute;background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
+    circle.setAttribute('tabindex', '0');
+    image_window.appendChild(circle);
+    let circleX = 0;
+    let circleY = 0;
+    let step = 10;
+// (5) WASD to move the circle
+document.addEventListener('keydown', (event) => {
+        switch (event.key) {
+            case 'w':
+                circleY -= step;
+                console.log(whichTileIsPlayerOn(circle));
+                break;
+            case 'a':
+                circleX -= step;
+                console.log(whichTileIsPlayerOn(circle));
+                break;
+            case 's':
+                circleY += step;
+                console.log(whichTileIsPlayerOn(circle));
+                break;
+            case 'd':
+                circleX += step;
+                console.log(whichTileIsPlayerOn(circle));
+                break;
+        }
+        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+    })
+}
+// (6) console.log eventListeners which square did the player enter 
+function whichTileIsPlayerOn(circle) {
+    let circleCollision = circle.getBoundingClientRect();
+    let tiles = document.querySelectorAll('[id^="tile"]');
 
+    for (let i = 0; i < tiles.length; i++) {
+        let tileCollision = tiles[i].getBoundingClientRect();
+        if (
+            circleCollision.left < tileCollision.right &&
+            circleCollision.right > tileCollision.left &&
+            circleCollision.top < tileCollision.bottom &&
+            circleCollision.bottom > tileCollision.top 
+        ) {
+            return tiles[i].id;
+        }
+    }
+    return null;
+}
 // ---story logic section---
 // confirm next step with an enter press
 // so i need to make a thing that will be created inside the forEach loop
@@ -520,8 +616,8 @@ function initializeCreationB(chapterIndex) {
     main_window.appendChild(entry);
     let choice1 = { 
         text: 'I struggled in life and became a janitor.', 
-        outcome: initializeIntro, 
-        storyPoint: story.findIndex(i => i == initializeIntro), 
+        outcome: initializeCreationC, 
+        storyPoint: story.findIndex(i => i == initializeCreationC), 
         modifier: function() { 
             char1 = new Janitor(char1.name, 13, 15, 100, 100, 'Normal Attack'); 
             menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are a Janitor.');
@@ -530,8 +626,8 @@ function initializeCreationB(chapterIndex) {
     };
     let choice2 = { 
         text: `It's not fun, but it pays the bills... I'm an accountant.`, 
-        outcome: initializeIntro, 
-        storyPoint: story.findIndex(i => i == initializeIntro), 
+        outcome: initializeCreationC, 
+        storyPoint: story.findIndex(i => i == initializeCreationC), 
         modifier: function() { 
             char1 = new Accountant(char1.name, 13, 15, 100, 100, 'Normal Attack'); 
             menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are an Accountant.');
@@ -539,8 +635,8 @@ function initializeCreationB(chapterIndex) {
     };
     let choice3 = { 
         text: `I channelled my struggles into my art. I am... a dancer!`, 
-        outcome: initializeIntro, 
-        storyPoint: story.findIndex(i => i == initializeIntro), 
+        outcome: initializeCreationC, 
+        storyPoint: story.findIndex(i => i == initializeCreationC), 
         modifier: function() { 
             char1 = new Dancer(char1.name, 13, 15, 100, 100, 'Normal Attack'); 
             menu_window.textContent = menu_window.textContent.replace('Your class is unknown.', 'You are a Dancer.');
@@ -551,6 +647,35 @@ function initializeCreationB(chapterIndex) {
     }
     if (chapterIndex >= creationStoryB.length) {
         dialogueChoice(choice1, choice2, choice3);
+    }
+};
+// [PART 1] intro - get items
+let creationC1 = 'You keep walking through the woods, remembering your job.';
+let creationC2 = 'Your job as the newest employee of the Blue Inferno mercenary company... what was it?';
+let creationC3 = 'Ah, yes. Collect yourself, Dude. It was to rid the forest of a wizard that took refuge there.';
+let creationC4 = 'To make sure your mission was successful, you brought your only belonging in this world.';
+let creationStoryC = [creationC1, creationC2, creationC3, creationC4];
+function initializeCreationC(chapterIndex) {
+    let entry = document.createElement('p');
+    entry.textContent = creationStoryC[chapterIndex];
+    main_window.appendChild(entry);
+    let choice1 = { 
+        text: `My mother's rusty sword.`, 
+        outcome: initializeIntro, 
+        storyPoint: story.findIndex(i => i == initializeIntro),
+        modifier: function() { grabItem(rustySword) } 
+    };
+    let choice2 = { 
+        text: 'I slapped together some armor out of some garbage. Pretty proud of it, actually.', 
+        outcome: initializeIntro, 
+        storyPoint: story.findIndex(i => i == initializeIntro), 
+        modifier: function() { grabItem(rustyArmor) }
+     };
+    if (chapterIndex+1 <= creationStoryC.length) {
+        continuer(story.findIndex(i => i == initializeCreationC), chapterIndex+1);
+    }
+    if (chapterIndex >= creationStoryC.length) {
+        dialogueChoice(choice1, choice2);
     }
 };
 // [PART 1] intro - story strings
@@ -632,7 +757,7 @@ function wizardLooted(chapterIndex) {
 }
 let wizardKilled1 = `The imps crumble into dust, and the old man's body lies dead in the grass.`
 let wizardKilled2 = `Dude looks around, innocently whistling. Dude bends over and searches the old man's body.`
-let wizardKilled3 = `Dude finds a gold coin!`
+let wizardKilled3 = `Dude finds a golden ring!`
 let wizardKilledStory = [wizardKilled1, wizardKilled2, wizardKilled3]
 function wizardKilled(chapterIndex) {
     let entry = document.createElement('p');
@@ -641,10 +766,13 @@ function wizardKilled(chapterIndex) {
     if (chapterIndex+1 < wizardKilledStory.length) {
         continuer(story.findIndex(i => i == wizardKilled), chapterIndex+1);
     }
+    if (chapterIndex == wizardKilledStory.findIndex(i => i == wizardKilled3)) {
+        grabItem(goldRing);
+    }
 }
 // array of initializers
-let storyStrings = [creationStory, creationStoryB, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory];
-let story = [initializeCreation, initializeCreationB, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled];
+let storyStrings = [creationStory, creationStoryB, creationStoryC, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory];
+let story = [initializeCreation, initializeCreationB, initializeCreationC, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled];
 let currentStoryPoint = 0;
 // TESTER. start game
 initializeCreation(0);
