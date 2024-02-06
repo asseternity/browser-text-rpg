@@ -51,13 +51,13 @@ Character.prototype.attack = function(selectedEnemy) {
             if (selectedEnemy.currentHP > 0) {
                 let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus);
                 if (char1.equippedWeapon !== '') {
-                    attackRoll =+ this.equippedWeapon.itemAttack;
+                    attackRoll = attackRoll + this.equippedWeapon.itemAttack;
                 }
                 if (char1.equippedArmor !== '') {
-                    attackRoll =+ this.equippedArmor.itemAttack;
+                    attackRoll =+ attackRoll + this.equippedArmor.itemAttack;
                 }
                 if (char1.equippedMisc !== '') {
-                    attackRoll =+ this.equippedMisc.itemAttack;
+                    attackRoll =+ attackRoll + this.equippedMisc.itemAttack;
                 }
                 console.log(attackRoll)
                 let extraComment = '';
@@ -431,8 +431,6 @@ function menuUpdater() {
 // for now, a function explorationModeActivator that: 
 function explorationModeActivator() {
 // (1) clears the screen entirely
-    while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
-    while (log_window.firstChild) {log_window.removeChild(log_window.firstChild)};
     while (image_window.firstChild) {image_window.removeChild(image_window.firstChild)};
 // (2) asks you: READY TO FREE ROAM?
     let entry = document.createElement('p');
@@ -449,7 +447,7 @@ function explorationModeActivator() {
 function explorationGo() {
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
     let board = document.createElement('div');
-    board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:grid; grid-template-columns: repeat(6, 25px);')
+    board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
     image_window.appendChild(board);
     for (let i = 0; i < 126; i++) {
         let tile = document.createElement('div');
@@ -461,28 +459,39 @@ function explorationGo() {
     let circle = document.createElement('div');
     circle.setAttribute('style','position:absolute;background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
     circle.setAttribute('tabindex', '0');
-    image_window.appendChild(circle);
+    let centerTile = document.querySelector('#tile50');
+    centerTile.appendChild(circle);
     let circleX = 0;
     let circleY = 0;
-    let step = 10;
+    let step = 5;
 // (5) WASD to move the circle
-document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', (event) => {
+        let circleCollision = circle.getBoundingClientRect();
+        let boardCollision = board.getBoundingClientRect();
         switch (event.key) {
             case 'w':
-                circleY -= step;
-                console.log(whichTileIsPlayerOn(circle));
+                if (circleCollision.top - step > boardCollision.top) {
+                    circleY -= step;
+                    console.log(whichTileIsPlayerOn(circle));
+                }
                 break;
             case 'a':
-                circleX -= step;
-                console.log(whichTileIsPlayerOn(circle));
+                if (circleCollision.left - step > boardCollision.left) {
+                    circleX -= step;
+                    console.log(whichTileIsPlayerOn(circle));
+                }
                 break;
             case 's':
-                circleY += step;
-                console.log(whichTileIsPlayerOn(circle));
+                if (circleCollision.bottom + step < boardCollision.bottom) {
+                    circleY += step;
+                    console.log(whichTileIsPlayerOn(circle));
+                }
                 break;
             case 'd':
-                circleX += step;
-                console.log(whichTileIsPlayerOn(circle));
+                if (circleCollision.right + step < boardCollision.right) {
+                    circleX += step;
+                    console.log(whichTileIsPlayerOn(circle));
+                }
                 break;
         }
         circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
@@ -735,8 +744,15 @@ function wizardAgreedToHelp(chapterIndex) {
     let entry = document.createElement('p');
     entry.textContent = wizardAgreedToHelpStory[chapterIndex];
     main_window.appendChild(entry);
-    if (chapterIndex+1 < wizardAgreedToHelpStory.length) {
+    if (chapterIndex+1 <= wizardAgreedToHelpStory.length) {
         continuer(story.findIndex(i => i == wizardAgreedToHelp), chapterIndex+1);
+    }
+    if (chapterIndex+1 > wizardAgreedToHelpStory.length) {
+        let oldText = main_window.querySelectorAll('p');
+        oldText.forEach(entry => {
+            main_window.removeChild(entry);
+        });
+        story[story.findIndex(i => i == tutorialForExploration)](0);
     }
 }
 let wizardLooted1 = `Dude says, "I'd rather see what you might have of value".`;
@@ -770,9 +786,25 @@ function wizardKilled(chapterIndex) {
         grabItem(goldRing);
     }
 }
+// [PART 4] begin exploration
+let beginExploration1 = `With that, Dude finally reached the entrance to the forest proper.`;
+let beginExploration2 = `People at the Blue Inferno called this forest the Singing Creek.`;
+let beginExploration3 = `They didn't mention why exactly. In any case, it's time to explore the Singing Creek.`;
+let beginExplorationStory = [beginExploration1, beginExploration2, beginExploration3]
+function tutorialForExploration(chapterIndex) {
+    let entry = document.createElement('p');
+    entry.textContent = beginExplorationStory[chapterIndex];
+    main_window.appendChild(entry);
+    if (chapterIndex+1 <= beginExplorationStory.length) {
+        continuer(story.findIndex(i => i == tutorialForExploration), chapterIndex+1);
+    }
+    if (chapterIndex+1 > beginExplorationStory.length) {
+        explorationModeActivator();
+    }
+}
 // array of initializers
-let storyStrings = [creationStory, creationStoryB, creationStoryC, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory];
-let story = [initializeCreation, initializeCreationB, initializeCreationC, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled];
+let storyStrings = [creationStory, creationStoryB, creationStoryC, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory, beginExplorationStory];
+let story = [initializeCreation, initializeCreationB, initializeCreationC, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled, tutorialForExploration];
 let currentStoryPoint = 0;
 // TESTER. start game
-initializeCreation(0);
+wizardAgreedToHelp(0);
