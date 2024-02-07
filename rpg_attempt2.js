@@ -317,18 +317,21 @@ let ultraRing = newItem('Ultra Ring', 'misc', 2, 2, 'n6');
 let rustySword = newItem('Rusty Sword', 'weapon', 1, 0, 'n7');
 let rustyArmor = newItem('Rusty Armor', 'armor', 0, 1, 'n8');
 let goldRing = newItem('Gold Ring', 'misc', 0, 1, 'n9');
+let healthPotion = newItem('Health Potion', 'quest item', 0, 0, 'n10');
 // when an object is grabbed, splice it from allItems and += it to char1.inventory
 function grabItem(item) {
     char1.inventory.push(item);
     let itemBullet = document.createElement('li')
     itemBullet.textContent = `${item.name}, ${item.type}. Attack bonus: ${item.itemAttack}. Armor bonus: ${item.itemArmor}.`
     allList.appendChild(itemBullet);
-    let equipButton = document.createElement('button');
-    equipButton.addEventListener('click', () => equipItem(item));
-    equipButton.textContent = 'Equip';
-    equipButton.setAttribute('style', 'font-size: 70%;');
-    equipButton.setAttribute('id', `${item.id}`);
-    allList.appendChild(equipButton);
+    if (item.type !== 'quest item') {
+        let equipButton = document.createElement('button');
+        equipButton.addEventListener('click', () => equipItem(item));
+        equipButton.textContent = 'Equip';
+        equipButton.setAttribute('style', 'font-size: 70%;');
+        equipButton.setAttribute('id', `${item.id}`);
+        allList.appendChild(equipButton);
+    }
 }
 // when an object is equipped, splice it from char1.inventory and make equippedWeapon = this item object
 function equipItem(item) {
@@ -429,7 +432,8 @@ function menuUpdater() {
 // tileset is an object with the info on how many squares to generate
 // what's on the squares, what events and icons, etc
 // for now, a function explorationModeActivator that: 
-function explorationModeActivator() {
+let moveOn = true;
+function explorationModeActivator(tileset) {
 // (1) clears the screen entirely
     while (image_window.firstChild) {image_window.removeChild(image_window.firstChild)};
 // (2) asks you: READY TO FREE ROAM?
@@ -440,11 +444,11 @@ function explorationModeActivator() {
     button.textContent = 'I am ready!'
     main_window.appendChild(button);
     button.addEventListener('click', () => {
-        explorationGo();
+        explorationGo(tileset);
     })
 }
 // (3) once you click yes, draws squares in the map_area
-function explorationGo() {
+function explorationGo(tileset) {
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
     let board = document.createElement('div');
     board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
@@ -470,27 +474,28 @@ function explorationGo() {
         let boardCollision = board.getBoundingClientRect();
         switch (event.key) {
             case 'w':
-                if (circleCollision.top - step > boardCollision.top) {
+                if (circleCollision.top - step > boardCollision.top && moveOn == true) {
                     circleY -= step;
-                    console.log(whichTileIsPlayerOn(circle));
+                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
+
                 }
                 break;
             case 'a':
-                if (circleCollision.left - step > boardCollision.left) {
+                if (circleCollision.left - step > boardCollision.left && moveOn == true) {
                     circleX -= step;
-                    console.log(whichTileIsPlayerOn(circle));
+                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
                 }
                 break;
             case 's':
-                if (circleCollision.bottom + step < boardCollision.bottom) {
+                if (circleCollision.bottom + step < boardCollision.bottom && moveOn == true) {
                     circleY += step;
-                    console.log(whichTileIsPlayerOn(circle));
+                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
                 }
                 break;
             case 'd':
-                if (circleCollision.right + step < boardCollision.right) {
+                if (circleCollision.right + step < boardCollision.right && moveOn == true) {
                     circleX += step;
-                    console.log(whichTileIsPlayerOn(circle));
+                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
                 }
                 break;
         }
@@ -514,6 +519,51 @@ function whichTileIsPlayerOn(circle) {
         }
     }
     return null;
+}
+// ---tile event logic section---
+// class of tile objects
+class ex1Tile {
+    constructor(name, number, icon, initializerEvent) {
+        this.name = name,
+        this.number = number,
+        this.icon = icon,
+        this.initializerEvent = initializerEvent
+    }
+    getID() {
+        return `#tile${this.number}`;
+    }
+}
+// a couple of example ex1tiles
+let ex1Health = new ex1Tile('Health Potion', 70, '', initializer_ex1Health);
+let ex1GoblinChief = new ex1Tile('Goblin Chief', 100, '', '');
+// these exploration events should be in a different array, EACH
+// array of all special tiles. each item of the array is an object with an image and a story initializer
+let ex1Tiles = [ex1Health, ex1GoblinChief]
+// drawIcons is in a separate function
+function drawIcons(tiles_objects) { 
+    let tiles_divs = document.querySelectorAll('[id^="tile"]');
+    for (let i = 0; i <= tiles_divs.length; i++) {
+        for (let j = 0; j <= tiles_objects.length; j++) {
+            if (tiles_divs[i] == tiles_objects[j].getID) {
+                let icon = document.createElement('img');
+                icon.src = tiles_objects[j].icon;
+                tiles_divs[i].appendChild(icon);                
+            }
+        }
+    }
+}
+// function tileTriggers(tileNumber)
+// connect the tileTriggers function with whichTilePlayerIsOn. WhichTile will return a tileID, which tileSettings will take for event
+function tileTriggers(tileID, tileset) {
+// this function will
+// (1) clear main window
+    while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
+// (2) activate an event
+    for (let i = 0; i < tileset.length; i++) {
+        if (`#${tileID}` == tileset[i].getID()) {
+            tileset[i].initializerEvent(0);
+        }
+    }
 }
 // ---story logic section---
 // confirm next step with an enter press
@@ -799,7 +849,7 @@ function tutorialForExploration(chapterIndex) {
         continuer(story.findIndex(i => i == tutorialForExploration), chapterIndex+1);
     }
     if (chapterIndex+1 > beginExplorationStory.length) {
-        explorationModeActivator();
+        explorationModeActivator(ex1Tiles);
     }
 }
 // array of initializers
@@ -807,4 +857,4 @@ let storyStrings = [creationStory, creationStoryB, creationStoryC, intros, intro
 let story = [initializeCreation, initializeCreationB, initializeCreationC, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled, tutorialForExploration];
 let currentStoryPoint = 0;
 // TESTER. start game
-wizardAgreedToHelp(0);
+initializeCreation(0);
