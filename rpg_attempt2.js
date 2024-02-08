@@ -438,7 +438,7 @@ function explorationModeActivator(tileset) {
     while (image_window.firstChild) {image_window.removeChild(image_window.firstChild)};
 // (2) asks you: READY TO FREE ROAM?
     let entry = document.createElement('p');
-    entry.textContent = 'Time to explore the surroundings. Am I ready?'
+    entry.textContent = 'Time to explore the surroundings. Am I ready? [Use WASD to move]'
     main_window.appendChild(entry);
     let button = document.createElement('button');
     button.textContent = 'I am ready!'
@@ -856,5 +856,109 @@ function tutorialForExploration(chapterIndex) {
 let storyStrings = [creationStory, creationStoryB, creationStoryC, intros, introsB, wizardAgreedToHelpStory, wizardLootedStory, wizardKilledStory, beginExplorationStory];
 let story = [initializeCreation, initializeCreationB, initializeCreationC, initializeIntro, initializeIntroB, wizardAgreedToHelp, wizardLooted, wizardKilled, tutorialForExploration];
 let currentStoryPoint = 0;
+
+// --- NEW SYSTEM (CURRENTLY TESTING) ---
+// class storyElement { type(dialogue, choice, battle, description, item); text = []; 
+// modifiers(for battle: enemies, for choice/dialogue: choices, for item: item name);
+// nextStory }
+class storyElement {
+    constructor(type, text, modifiers, nextStoryElement) {
+        this.type = type;
+        this.text = text;
+        this.modifiers = modifiers;
+        this.nextStoryElement = nextStoryElement;
+    }
+}
+// objects of this class will be ALL that I have to edit
+let test2 = new storyElement(
+    'description',
+    [
+        'Hello!',
+        'This is the new introduction 2.',
+        'Fun again, is it not?',
+        'Certainly is. Again.'
+    ],
+    undefined,
+    undefined
+) 
+let test = new storyElement(
+    'description',
+    [
+        'Hello!',
+        'This is a new introduction.',
+        'Fun, is it not?',
+        'Certainly is.'
+    ],
+    undefined,
+    test2
+)
+// the function is ALWAYS static
+
+// function story(type, text, modifiers)
+function storyTeller(storyElement, stage) {
+    if (stage == 0) {
+        while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
+        textFlipper(storyElement, storyElement.text, 0);
+    }
+    if (stage == 1) {
+        switch (storyElement.type) {
+            case 'description':
+                storyTeller(storyElement.nextStoryElement, 0);
+                break;
+            case 'battle':
+
+                break;
+            case 'item':
+                grabItem(storyElement.modifier);
+                let announcement = document.createElement('p');
+                announcement.textContent = `Acquired ${storyElement.modifier.name}!`
+                announcement.setAttribute('style', 'color:yellow');
+                main_window.appendChild(announcement);
+                announcement.addEventListener('click', () => {
+                    storyTeller(storyElement.nextStoryElement, 0);
+                })
+                break;
+            case 'choice':
+
+                break;
+            case 'dialogue':
+
+                break;
+        }
+    }
+}
+// cycle through text.length using click to continue buttons
+// then check: if nothing, then just sent to nextStory
+// if battle, do battle with enemies listed, then go to nextStory
+// if choices, send to different stories in the modifier property
+// if item, give item then send to nextStory
+// if dialogue, the text array and the modifier array are interconnected:
+// the story function only plays the first line from the text array, and shows the first choices from the modifier array
+// modifier array is an array of objects with props: text / nextLine (indicating which item of the text array to play after)
+// each conversation is not like a dialogue tree in a videogame, but a sliding waterfall.
+
+//--- supplementary functions
+function textFlipper(storyElement, stringsArray, loop) {
+    let storyParagraph = document.createElement('p');
+    storyParagraph.textContent = stringsArray[loop];
+    main_window.appendChild(storyParagraph);
+    if (loop < stringsArray.length) {
+        let continueButton = document.createElement('button');
+        continueButton.textContent = 'Click here to continue.';
+        main_window.appendChild(continueButton);
+        continueButton.focus();
+        continueButton.addEventListener('click', () => {
+            loop++;
+            textFlipper(storyElement, stringsArray, loop);
+            main_window.removeChild(continueButton);
+            if (loop == stringsArray.length) {
+                storyTeller(storyElement, 1);
+            }
+        })
+    }
+}
 // TESTER. start game
-initializeCreation(0);
+storyTeller(test, 0);
+
+// TO DO LIST.
+// redo the character creation using the new system
