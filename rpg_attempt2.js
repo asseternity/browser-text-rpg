@@ -241,25 +241,25 @@ function startBattle(...encounterEnemies) {
     enemies = encounterEnemies;
     listEnemies();
 }
-//finish battle
-function isBattleOver(battleResult) {
-    if (battleResult == 'win') {
-        while (log_window.children.length > 1) { log_window.removeChild(log_window.firstChild) };
-        enemyToAttack == undefined;
-        top_bar.removeChild(top_bar.firstChild);
-        while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
-        currentStoryPoint++;
-        story[currentStoryPoint](0);
-    } else {   
-        let entry = document.createElement('p');
-        entry.textContent = `You died!`;
-        log_window.appendChild(entry);
-        button_window.removeChild(attack_button);
-        button_window.removeChild(move_button);
-        button_window.removeChild(talk_button);
-        button_window.removeChild(trade_button);
-    }
-}
+// //finish battle
+// function isBattleOver(battleResult) {
+//     if (battleResult == 'win') {
+//         while (log_window.children.length > 1) { log_window.removeChild(log_window.firstChild) };
+//         enemyToAttack == undefined;
+//         top_bar.removeChild(top_bar.firstChild);
+//         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
+//         currentStoryPoint++;
+//         story[currentStoryPoint](0);
+//     } else {   
+//         let entry = document.createElement('p');
+//         entry.textContent = `You died!`;
+//         log_window.appendChild(entry);
+//         button_window.removeChild(attack_button);
+//         button_window.removeChild(move_button);
+//         button_window.removeChild(talk_button);
+//         button_window.removeChild(trade_button);
+//     }
+// }
 // ---inventory system---
 // create a dialog window when we click on inventory
 let inventoryDialog = document.createElement('dialog');
@@ -859,7 +859,7 @@ let currentStoryPoint = 0;
 
 // --- NEW SYSTEM (CURRENTLY TESTING) ---
 // class storyElement { type(dialogue, choice, battle, description, item); text = []; 
-// modifiers(for battle: enemies, for choice/dialogue: choices, for item: item name);
+// modifiers(for battle: array of enemies, for choice/dialogue: choices, for item: item name);
 // nextStory }
 class storyElement {
     constructor(type, text, modifiers, nextStoryElement) {
@@ -870,18 +870,101 @@ class storyElement {
     }
 }
 // objects of this class will be ALL that I have to edit
-let test2 = new storyElement(
+
+let testAfterDialogue = new storyElement(
     'description',
+    [
+        'You are alone again.'
+    ],
+    undefined,
+    undefined
+)
+let testDialogue = new storyElement(
+    'dialogue',
+    [{ lineNumber: 0, npcLine: 'You see a person. They approach, and say: "Hello!".', responses: 
+        [{ dialogueChoice: 'And hello to you kind person!', dialogueNextLine: 1, points: 1 },
+        { dialogueChoice: 'Hello, more like hyulo!', dialogueNextLine: 2, points: -1 }]},
+    { lineNumber: 1, npcLine: '"Nice to see a polite individual around these parts! How are you today?"', responses: 
+        [{ dialogueChoice: 'I am doing well.', dialogueNextLine: 3, points: 1 },
+        { dialogueChoice: 'I need help...', dialogueNextLine: 4, points: -1 }]},
+    { lineNumber: 2, npcLine: '"I do not speak this foul-sounding language of yours," they say, sounding concerned. "Are you okay?".', responses: 
+        [{ dialogueChoice: 'I am doing well.', dialogueNextLine: 3, points: 1 },
+        { dialogueChoice: 'I need help...', dialogueNextLine: 4, points: 0 }]},
+    { lineNumber: 3, npcLine: '"Glad to hear it. Well, stay safe out there."', responses: 
+        [{ dialogueChoice: 'Goodbye, and good luck.', dialogueNextLine: 5, points: 1 },
+        { dialogueChoice: 'Oh, piss off already.', dialogueNextLine: 5, points: -1 }]},
+    { lineNumber: 4, npcLine: '"Wish I could help you, friend. God bless."', responses: 
+        [{ dialogueChoice: 'It is alright. Take care of yourself, stranger.', dialogueNextLine: 5, points: 1 },
+        { dialogueChoice: 'Thanks for nothing...', dialogueNextLine: 5, points: -1 }]},
+    { lineNumber: 5, npcLine: 'The stranger says goodbye and leaves.'}],
+    [
+        'StrangerFriendly',
+        'StrangerNeutral',
+        'StrangerAnnoyed'
+    ],
+    testAfterDialogue
+) 
+let testChoiceOutcome2 = new storyElement(
+    'description',
+    [
+        'You chose 2.'
+    ],
+    undefined,
+    testDialogue
+) 
+let testChoiceOutcome1 = new storyElement(
+    'description',
+    [
+        'You chose 1.'
+    ],
+    undefined,
+    testDialogue
+) 
+let testChoice = new storyElement(
+    'choice',
     [
         'Hello!',
         'This is the new introduction 2.',
         'Fun again, is it not?',
         'Certainly is. Again.'
     ],
-    undefined,
+    [
+        {
+            choiceText: 'I will choose 1.',
+            choiceModifiers: 'testChoice1',
+            choiceNextStory: testChoiceOutcome1
+        },
+        {
+            choiceText: 'I will choose 2.',
+            choiceModifiers: 'testChoice2',
+            choiceNextStory: testChoiceOutcome2
+        },
+    ],
     undefined
 ) 
-let test = new storyElement(
+let testItem = new storyElement(
+    'item',
+    [
+        'Enemies are dead!',
+        'This description has more strings.',
+        'Like one more.',
+        'Thank you for your patience.',
+        'As a reward, here is an item.'
+    ],
+    magicSword,
+    testChoice
+) 
+let testBattle = new storyElement(
+    'battle',
+    [
+        'Well now it is time to play!',
+        'This array has fewer strings too! Muahahaha.',
+        'It is a fight!'
+    ],
+    [imp1, imp2],
+    testItem
+) 
+let testDescription = new storyElement(
     'description',
     [
         'Hello!',
@@ -890,75 +973,159 @@ let test = new storyElement(
         'Certainly is.'
     ],
     undefined,
-    test2
+    testBattle
 )
 // the function is ALWAYS static
-
 // function story(type, text, modifiers)
-function storyTeller(storyElement, stage) {
-    if (stage == 0) {
-        while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
-        textFlipper(storyElement, storyElement.text, 0);
-    }
-    if (stage == 1) {
-        switch (storyElement.type) {
-            case 'description':
-                storyTeller(storyElement.nextStoryElement, 0);
-                break;
-            case 'battle':
-
-                break;
-            case 'item':
-                grabItem(storyElement.modifier);
-                let announcement = document.createElement('p');
-                announcement.textContent = `Acquired ${storyElement.modifier.name}!`
-                announcement.setAttribute('style', 'color:yellow');
-                main_window.appendChild(announcement);
-                announcement.addEventListener('click', () => {
-                    storyTeller(storyElement.nextStoryElement, 0);
-                })
-                break;
-            case 'choice':
-
-                break;
-            case 'dialogue':
-
-                break;
-        }
+function storyTeller(storyElement) {
+    while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
+    if (storyElement.type !== 'dialogue') {
+        textFlipper(storyElement, 0);
+    } else {
+        newDialogueMaker(storyElement, 0);
     }
 }
-// cycle through text.length using click to continue buttons
-// then check: if nothing, then just sent to nextStory
-// if battle, do battle with enemies listed, then go to nextStory
-// if choices, send to different stories in the modifier property
-// if item, give item then send to nextStory
+
 // if dialogue, the text array and the modifier array are interconnected:
 // the story function only plays the first line from the text array, and shows the first choices from the modifier array
 // modifier array is an array of objects with props: text / nextLine (indicating which item of the text array to play after)
 // each conversation is not like a dialogue tree in a videogame, but a sliding waterfall.
 
 //--- supplementary functions
-function textFlipper(storyElement, stringsArray, loop) {
+// new continue button operator
+let announcement;
+function textFlipper(storyElement, loop, style) {
     let storyParagraph = document.createElement('p');
-    storyParagraph.textContent = stringsArray[loop];
+    storyParagraph.textContent = storyElement.text[loop];
+    if (style == 'yellow') { storyParagraph.setAttribute('style','color:yellow;'); }
     main_window.appendChild(storyParagraph);
-    if (loop < stringsArray.length) {
+    if (loop < storyElement.text.length) {
         let continueButton = document.createElement('button');
         continueButton.textContent = 'Click here to continue.';
         main_window.appendChild(continueButton);
         continueButton.focus();
         continueButton.addEventListener('click', () => {
             loop++;
-            textFlipper(storyElement, stringsArray, loop);
+            textFlipper(storyElement, loop);
             main_window.removeChild(continueButton);
-            if (loop == stringsArray.length) {
-                storyTeller(storyElement, 1);
+            if (loop == storyElement.text.length) {
+                switch (storyElement.type) {
+                    case 'description':
+                        storyTeller(storyElement.nextStoryElement);
+                        break;
+                    case 'battle':
+                        newBattleStarter(storyElement, storyElement.modifiers);
+                        break;
+                    case 'item':
+                        grabItem(storyElement.modifiers);
+                        announcement = { text: [`Acquired ${storyElement.modifiers.name}!`], type: 'itemAcquired', nextStoryElement: storyElement.nextStoryElement };
+                        textFlipper(announcement, 0, 'yellow');
+                        break;
+                    case 'itemAcquired':
+                        storyTeller(announcement.nextStoryElement);
+                        break;
+                    case 'choice':
+                        newChoice(storyElement);
+                        break;
+                    case 'dialogue':
+                        break;
+                }
             }
         })
     }
 }
+// new dialogue function
+let relationshipMeter = 0;
+function newDialogueMaker(storyElement, line) {
+    let npcDialogueLine = document.createElement('p');
+    npcDialogueLine.textContent = storyElement.text[line].npcLine;
+    main_window.appendChild(npcDialogueLine);
+    if (line !== storyElement.text.length - 1) {
+        storyElement.text[line].responses.forEach((response) => {
+            let responseButton = document.createElement('button');
+            responseButton.textContent = response.dialogueChoice;
+            main_window.appendChild(responseButton);
+            responseButton.setAttribute('class', 'choiceButton');
+            responseButton.addEventListener('click', () => {
+                let dialogueButtons = main_window.querySelectorAll('button');
+                dialogueButtons.forEach(button => {
+                    button.remove();
+                });
+                let yourLine = document.createElement('p');
+                yourLine.textContent = `"${response.dialogueChoice}"`;
+                main_window.appendChild(yourLine);
+                relationshipMeter = relationshipMeter + response.points;
+                newDialogueMaker(storyElement, response.dialogueNextLine);
+            })
+        })
+    } else {
+        if (relationshipMeter <= -2) {
+            playerConsequences.push(storyElement.modifiers[2]);
+        } else if (relationshipMeter < 2) {
+            playerConsequences.push(storyElement.modifiers[1]);
+        } else if (relationshipMeter >= 2) {
+            playerConsequences.push(storyElement.modifiers[0]);
+        }
+        relationshipMeter = 0;
+        let continueButton = document.createElement('button');
+        continueButton.textContent = 'Click here to continue.';
+        main_window.appendChild(continueButton);
+        continueButton.focus();
+        continueButton.addEventListener('click', () => {
+            storyTeller(storyElement.nextStoryElement);
+        });
+    }
+}
+// new choice function
+let playerConsequences = [];
+function newChoice(storyElement) {
+    storyElement.modifiers.forEach((thisChoice) => {
+        let choiceButton = document.createElement('button');
+        choiceButton.textContent = thisChoice.choiceText;
+        choiceButton.setAttribute('class','choiceButton');
+        main_window.appendChild(choiceButton);
+        choiceButton.addEventListener('click', () => {
+            playerConsequences.push(thisChoice.choiceModifiers);
+            storyTeller(thisChoice.choiceNextStory);
+        });
+    })
+}
+// new battle functions
+let storyAfterBattle = null;
+function newBattleStarter(storyElement, thisEncounterEnemies) {
+    thisEncounterEnemies.forEach((currentEnemy) => { currentEnemy.currentHP = currentEnemy.maxHP });
+    enemies = thisEncounterEnemies;
+    storyAfterBattle = storyElement;
+    listEnemies();
+}
+function isBattleOver(battleResult) {
+    if (battleResult == 'win') {
+        let entry = document.createElement('p');
+        entry.textContent = 'You win the battle!';
+        log_window.appendChild(entry);
+        while (log_window.children.length > 2) { log_window.removeChild(log_window.firstChild) };
+        top_bar.removeChild(top_bar.firstChild);
+        while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
+        storyTeller(storyAfterBattle.nextStoryElement);
+        storyAfterBattle = null;        
+    } else {
+        let entry = document.createElement('p');
+        entry.textContent = 'You died!';
+        entry.setAttribute('style', 'color:red;');
+        log_window.appendChild(entry);
+        button_window.removeChild(attack_button);
+        button_window.removeChild(special_button);
+        button_window.removeChild(inventory_button);
+        button_window.removeChild(trade_button);
+    }
+}
 // TESTER. start game
-storyTeller(test, 0);
+storyTeller(testDialogue);
 
 // TO DO LIST.
+// finish the new system
+// test with storyElements of every type
 // redo the character creation using the new system
+// incorporate exploration into the new system
+// add icons to exploration
+// different shapes of exploration? (maybe by making a few divs a different-looking class, which looks different in the css) 

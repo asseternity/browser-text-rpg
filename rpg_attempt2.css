@@ -76,6 +76,10 @@ dialog {
     margin-bottom: 10px;
 }
 
+.main_window .choiceButton {
+    display: block;
+}
+
 .main_window button:hover{
     background-color: var(--purple2);
 }
