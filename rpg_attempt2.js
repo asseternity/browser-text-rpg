@@ -871,13 +871,24 @@ class storyElement {
 }
 // objects of this class will be ALL that I have to edit
 
-let testAfterDialogue = new storyElement(
+let testFinal = new storyElement(
     'description',
     [
-        'You are alone again.'
+        'You set out on the road again.'
     ],
     undefined,
     undefined
+)
+let testAfterDialogue = new storyElement(
+    'consequence',
+    [{dependency: 'StrangerFriendly', consequenceText: [
+        'You hope that person winds what they are looking for.',
+        'Oh, well. You have your own needs to take care of.']},
+    {dependency: 'StrangerAnnoyed', consequenceText: [
+        'Well that person was a jerk.',
+        'What a shit-faced poopster.']}],
+    undefined,
+    testFinal
 )
 let testDialogue = new storyElement(
     'dialogue',
@@ -979,10 +990,12 @@ let testDescription = new storyElement(
 // function story(type, text, modifiers)
 function storyTeller(storyElement) {
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
-    if (storyElement.type !== 'dialogue') {
+    if (storyElement.type !== 'dialogue' && storyElement.type !== 'consequence') {
         textFlipper(storyElement, 0);
-    } else {
+    } else if (storyElement.type == 'dialogue') {
         newDialogueMaker(storyElement, 0);
+    } else {
+        consequenceShower(storyElement, 0);
     }
 }
 
@@ -1032,6 +1045,37 @@ function textFlipper(storyElement, loop, style) {
                 }
             }
         })
+    }
+}
+// consequence function
+function consequenceShower(storyElement, line) {
+    let entry = document.createElement('p');
+    let correctConsequence = null;
+    for (let i = 0; i < storyElement.text.length; i++) {
+        if (playerConsequences.includes(storyElement.text[i].dependency)) {
+            correctConsequence = i;
+            console.log(correctConsequence);
+        }
+    }
+    if (correctConsequence !== null) {
+        entry.textContent = storyElement.text[correctConsequence].consequenceText[line];
+        main_window.appendChild(entry);
+        if (line < storyElement.text[correctConsequence].consequenceText.length) {
+            let continueButton = document.createElement('button');
+            continueButton.textContent = 'Click here to continue.';
+            main_window.appendChild(continueButton);
+            continueButton.focus();
+            continueButton.addEventListener('click', () => {
+                line++;
+                main_window.removeChild(continueButton);
+                consequenceShower(storyElement, line);
+            })
+        }
+        if (line == storyElement.text[correctConsequence].consequenceText.length) {
+            storyTeller(storyElement.nextStoryElement);
+        }
+    } else {
+        storyTeller(storyElement.nextStoryElement);
     }
 }
 // new dialogue function
@@ -1123,9 +1167,8 @@ function isBattleOver(battleResult) {
 storyTeller(testDialogue);
 
 // TO DO LIST.
-// finish the new system
-// test with storyElements of every type
-// redo the character creation using the new system
 // incorporate exploration into the new system
+// redo the character creation using the new system
+// remove unnecessary shit
 // add icons to exploration
 // different shapes of exploration? (maybe by making a few divs a different-looking class, which looks different in the css) 
