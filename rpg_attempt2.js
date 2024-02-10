@@ -425,146 +425,6 @@ function menuUpdater() {
         menu_window.textContent = `You are ${char1.name}. Your class is unknown. Your armor class is ${char1.armorClass}. Your HP is ${char1.currentHP}/${char1.maxHP}.`;
     }
 }
-// ---map system--
-// draw a bunch of squares in the map_area in a square
-// it should activate in free roam mode, and be able to alternate between 'story' and 'exploration'
-// so it should be a function: explorationModeActivator(tileset)
-// tileset is an object with the info on how many squares to generate
-// what's on the squares, what events and icons, etc
-// for now, a function explorationModeActivator that: 
-let moveOn = true;
-function explorationModeActivator(tileset) {
-// (1) clears the screen entirely
-    while (image_window.firstChild) {image_window.removeChild(image_window.firstChild)};
-// (2) asks you: READY TO FREE ROAM?
-    let entry = document.createElement('p');
-    entry.textContent = 'Time to explore the surroundings. Am I ready? [Use WASD to move]'
-    main_window.appendChild(entry);
-    let button = document.createElement('button');
-    button.textContent = 'I am ready!'
-    main_window.appendChild(button);
-    button.addEventListener('click', () => {
-        explorationGo(tileset);
-    })
-}
-// (3) once you click yes, draws squares in the map_area
-function explorationGo(tileset) {
-    while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
-    let board = document.createElement('div');
-    board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
-    image_window.appendChild(board);
-    for (let i = 0; i < 126; i++) {
-        let tile = document.createElement('div');
-        tile.setAttribute('style','padding:5px;border:1px solid white;height:15px;width:15px;');
-        tile.setAttribute('id', `tile${i}`);
-        board.appendChild(tile);
-    }
-// (4) circle inside the squares
-    let circle = document.createElement('div');
-    circle.setAttribute('style','position:absolute;background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
-    circle.setAttribute('tabindex', '0');
-    let centerTile = document.querySelector('#tile50');
-    centerTile.appendChild(circle);
-    let circleX = 0;
-    let circleY = 0;
-    let step = 5;
-// (5) WASD to move the circle
-    document.addEventListener('keydown', (event) => {
-        let circleCollision = circle.getBoundingClientRect();
-        let boardCollision = board.getBoundingClientRect();
-        switch (event.key) {
-            case 'w':
-                if (circleCollision.top - step > boardCollision.top && moveOn == true) {
-                    circleY -= step;
-                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
-
-                }
-                break;
-            case 'a':
-                if (circleCollision.left - step > boardCollision.left && moveOn == true) {
-                    circleX -= step;
-                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
-                }
-                break;
-            case 's':
-                if (circleCollision.bottom + step < boardCollision.bottom && moveOn == true) {
-                    circleY += step;
-                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
-                }
-                break;
-            case 'd':
-                if (circleCollision.right + step < boardCollision.right && moveOn == true) {
-                    circleX += step;
-                    tileTriggers(whichTileIsPlayerOn(circle), tileset);
-                }
-                break;
-        }
-        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
-    })
-}
-// (6) console.log eventListeners which square did the player enter 
-function whichTileIsPlayerOn(circle) {
-    let circleCollision = circle.getBoundingClientRect();
-    let tiles = document.querySelectorAll('[id^="tile"]');
-
-    for (let i = 0; i < tiles.length; i++) {
-        let tileCollision = tiles[i].getBoundingClientRect();
-        if (
-            circleCollision.left < tileCollision.right &&
-            circleCollision.right > tileCollision.left &&
-            circleCollision.top < tileCollision.bottom &&
-            circleCollision.bottom > tileCollision.top 
-        ) {
-            return tiles[i].id;
-        }
-    }
-    return null;
-}
-// ---tile event logic section---
-// class of tile objects
-class ex1Tile {
-    constructor(name, number, icon, initializerEvent) {
-        this.name = name,
-        this.number = number,
-        this.icon = icon,
-        this.initializerEvent = initializerEvent
-    }
-    getID() {
-        return `#tile${this.number}`;
-    }
-}
-// a couple of example ex1tiles
-let ex1Health = new ex1Tile('Health Potion', 70, '', initializer_ex1Health);
-let ex1GoblinChief = new ex1Tile('Goblin Chief', 100, '', '');
-// these exploration events should be in a different array, EACH
-// array of all special tiles. each item of the array is an object with an image and a story initializer
-let ex1Tiles = [ex1Health, ex1GoblinChief]
-// drawIcons is in a separate function
-function drawIcons(tiles_objects) { 
-    let tiles_divs = document.querySelectorAll('[id^="tile"]');
-    for (let i = 0; i <= tiles_divs.length; i++) {
-        for (let j = 0; j <= tiles_objects.length; j++) {
-            if (tiles_divs[i] == tiles_objects[j].getID) {
-                let icon = document.createElement('img');
-                icon.src = tiles_objects[j].icon;
-                tiles_divs[i].appendChild(icon);                
-            }
-        }
-    }
-}
-// function tileTriggers(tileNumber)
-// connect the tileTriggers function with whichTilePlayerIsOn. WhichTile will return a tileID, which tileSettings will take for event
-function tileTriggers(tileID, tileset) {
-// this function will
-// (1) clear main window
-    while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
-// (2) activate an event
-    for (let i = 0; i < tileset.length; i++) {
-        if (`#${tileID}` == tileset[i].getID()) {
-            tileset[i].initializerEvent(0);
-        }
-    }
-}
 // ---story logic section---
 // confirm next step with an enter press
 // so i need to make a thing that will be created inside the forEach loop
@@ -858,6 +718,9 @@ let story = [initializeCreation, initializeCreationB, initializeCreationC, initi
 let currentStoryPoint = 0;
 
 // --- NEW SYSTEM (CURRENTLY TESTING) ---
+// initialize images
+let iconTree = document.createElement('img'); iconTree.setAttribute('style','height:15px;width:15px;fill:white;'); iconTree.src = 'tree.png';
+let iconTree2 = document.createElement('img'); iconTree2.setAttribute('style','height:15px;width:15px;fill:white;'); iconTree2.src = 'tree.png';
 // class storyElement { type(dialogue, choice, battle, description, item); text = []; 
 // modifiers(for battle: array of enemies, for choice/dialogue: choices, for item: item name);
 // nextStory }
@@ -870,13 +733,23 @@ class storyElement {
     }
 }
 // objects of this class will be ALL that I have to edit
-
-let testFinal = new storyElement(
-    'description',
-    [
-        'You set out on the road again.'
-    ],
-    undefined,
+let randomEvent2 = new storyElement(
+    'randomEncounter',
+    ['You just found random encounter 2!'],
+    {hasPlayerSeenMe: false},
+    undefined
+)
+let randomEvent1 = new storyElement(
+    'randomEncounter',
+    ['You just found random encounter 1!'],
+    {hasPlayerSeenMe: false},
+    undefined
+)
+let testExploration = new storyElement(
+    'exploration',
+    ['You set out on the road again.', 'The forest is lush and hard to walk through.', 'The stranger was right - it will be hard to find your way here.'],
+    [{encounterStoryElement: randomEvent1, tileNumber: '#tile30', icon: iconTree},
+    {encounterStoryElement: randomEvent2, tileNumber: '#tile100', icon: iconTree2}],
     undefined
 )
 let testAfterDialogue = new storyElement(
@@ -888,7 +761,7 @@ let testAfterDialogue = new storyElement(
         'Well that person was a jerk.',
         'What a shit-faced poopster.']}],
     undefined,
-    testFinal
+    testExploration
 )
 let testDialogue = new storyElement(
     'dialogue',
@@ -908,81 +781,47 @@ let testDialogue = new storyElement(
         [{ dialogueChoice: 'It is alright. Take care of yourself, stranger.', dialogueNextLine: 5, points: 1 },
         { dialogueChoice: 'Thanks for nothing...', dialogueNextLine: 5, points: -1 }]},
     { lineNumber: 5, npcLine: 'The stranger says goodbye and leaves.'}],
-    [
-        'StrangerFriendly',
-        'StrangerNeutral',
-        'StrangerAnnoyed'
-    ],
+    ['StrangerFriendly', 'StrangerNeutral', 'StrangerAnnoyed'],
     testAfterDialogue
 ) 
 let testChoiceOutcome2 = new storyElement(
     'description',
-    [
-        'You chose 2.'
-    ],
+    ['You chose 2.'],
     undefined,
     testDialogue
 ) 
 let testChoiceOutcome1 = new storyElement(
     'description',
-    [
-        'You chose 1.'
-    ],
+    ['You chose 1.'],
     undefined,
     testDialogue
 ) 
 let testChoice = new storyElement(
     'choice',
-    [
-        'Hello!',
-        'This is the new introduction 2.',
-        'Fun again, is it not?',
-        'Certainly is. Again.'
-    ],
-    [
-        {
-            choiceText: 'I will choose 1.',
-            choiceModifiers: 'testChoice1',
-            choiceNextStory: testChoiceOutcome1
-        },
-        {
-            choiceText: 'I will choose 2.',
-            choiceModifiers: 'testChoice2',
-            choiceNextStory: testChoiceOutcome2
-        },
-    ],
+    ['Hello!', 'This is the new introduction 2.', 'Fun again, is it not?', 'Certainly is.', 'Again. But now it is time to choose: 1 or 2?'],
+    [{choiceText: 'I will choose 1.',
+    choiceModifiers: 'testChoice1',
+    choiceNextStory: testChoiceOutcome1},
+    {choiceText: 'I will choose 2.',
+    choiceModifiers: 'testChoice2',
+    choiceNextStory: testChoiceOutcome2}],
     undefined
 ) 
 let testItem = new storyElement(
     'item',
-    [
-        'Enemies are dead!',
-        'This description has more strings.',
-        'Like one more.',
-        'Thank you for your patience.',
-        'As a reward, here is an item.'
-    ],
+    ['Enemies are dead!', 'This description has more strings.', 'Like one more.', 'Thank you for your patience.', 'As a reward, here is an item.'],
     magicSword,
     testChoice
 ) 
 let testBattle = new storyElement(
     'battle',
-    [
-        'Well now it is time to play!',
-        'This array has fewer strings too! Muahahaha.',
-        'It is a fight!'
-    ],
+    ['Well now it is time to play!', 'This array has fewer strings too! Muahahaha.', 'It is a fight!'],
     [imp1, imp2],
     testItem
 ) 
 let testDescription = new storyElement(
     'description',
-    [
-        'Hello!',
-        'This is a new introduction.',
-        'Fun, is it not?',
-        'Certainly is.'
-    ],
+    ['Hello!', 'This is a new introduction.', 'Fun, is it not?', 'Certainly is.'],
     undefined,
     testBattle
 )
@@ -998,16 +837,11 @@ function storyTeller(storyElement) {
         consequenceShower(storyElement, 0);
     }
 }
-
-// if dialogue, the text array and the modifier array are interconnected:
-// the story function only plays the first line from the text array, and shows the first choices from the modifier array
-// modifier array is an array of objects with props: text / nextLine (indicating which item of the text array to play after)
-// each conversation is not like a dialogue tree in a videogame, but a sliding waterfall.
-
 //--- supplementary functions
 // new continue button operator
 let announcement;
 function textFlipper(storyElement, loop, style) {
+    if (storyElement.type == 'randomEncounter') { moveOn = false; }
     let storyParagraph = document.createElement('p');
     storyParagraph.textContent = storyElement.text[loop];
     if (style == 'yellow') { storyParagraph.setAttribute('style','color:yellow;'); }
@@ -1040,7 +874,13 @@ function textFlipper(storyElement, loop, style) {
                     case 'choice':
                         newChoice(storyElement);
                         break;
-                    case 'dialogue':
+                    case 'exploration':
+                        newExploration(storyElement);
+                        break;
+                    case 'randomEncounter':
+                        while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
+                        storyElement.modifiers.hasPlayerSeenMe = true;
+                        moveOn = true;
                         break;
                 }
             }
@@ -1054,7 +894,6 @@ function consequenceShower(storyElement, line) {
     for (let i = 0; i < storyElement.text.length; i++) {
         if (playerConsequences.includes(storyElement.text[i].dependency)) {
             correctConsequence = i;
-            console.log(correctConsequence);
         }
     }
     if (correctConsequence !== null) {
@@ -1079,6 +918,7 @@ function consequenceShower(storyElement, line) {
     }
 }
 // new dialogue function
+// each conversation is not like a dialogue tree in a videogame, but a sliding waterfall.
 let relationshipMeter = 0;
 function newDialogueMaker(storyElement, line) {
     let npcDialogueLine = document.createElement('p');
@@ -1163,12 +1003,116 @@ function isBattleOver(battleResult) {
         button_window.removeChild(trade_button);
     }
 }
+// new exploration functions
+let moveOn = true;
+function newExploration(storyElement) {
+    while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
+    let board = document.createElement('div');
+    board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
+    image_window.appendChild(board);
+    for (let i = 0; i < 126; i++) {
+        let tile = document.createElement('div');
+        tile.setAttribute('style','padding:5px;border:1px solid white;height:15px;width:15px;');
+        tile.setAttribute('id', `tile${i}`);
+        board.appendChild(tile);
+    }
+    drawIcons(storyElement);
+    // circle inside the squares
+    let circle = document.createElement('div');
+    circle.setAttribute('style','position:absolute;background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
+    circle.setAttribute('tabindex', '0');
+    let centerTile = document.querySelector('#tile50');
+    centerTile.appendChild(circle);
+    let circleX = 0;
+    let circleY = 0;
+    let step = 5;
+// WASD to move the circle
+    document.addEventListener('keydown', (event) => {
+        let circleCollision = circle.getBoundingClientRect();
+        let boardCollision = board.getBoundingClientRect();
+        switch (event.key) {
+            case 'w':
+                if (circleCollision.top - step > boardCollision.top && moveOn == true) {
+                    circleY -= step;
+                    tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+                }
+                break;
+            case 'a':
+                if (circleCollision.left - step > boardCollision.left && moveOn == true) {
+                    circleX -= step;
+                    tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+                }
+                break;
+            case 's':
+                if (circleCollision.bottom + step < boardCollision.bottom && moveOn == true) {
+                    circleY += step;
+                    tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+                }
+                break;
+            case 'd':
+                if (circleCollision.right + step < boardCollision.right && moveOn == true) {
+                    circleX += step;
+                    tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+                }
+                break;
+        }
+        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+    })
+}
+// when a player moves, it is triggered. returns "#tile30" type number
+function whichTileIsPlayerOn(circle) {
+    let circleCollision = circle.getBoundingClientRect();
+    let tiles = document.querySelectorAll('[id^="tile"]');
+    for (let i = 0; i < tiles.length; i++) {
+        let tileCollision = tiles[i].getBoundingClientRect();
+        if (
+            circleCollision.left < tileCollision.right &&
+            circleCollision.right > tileCollision.left &&
+            circleCollision.top < tileCollision.bottom &&
+            circleCollision.bottom > tileCollision.top 
+        ) {
+            return tiles[i].id;
+        }
+    }
+    return null;
+}
+// compares the tile id from above and activates a storyElement
+function tileTriggers(playersTile, storyElement) {
+    // clear main window
+        while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
+    // activate an event
+        for (let i = 0; i < storyElement.modifiers.length; i++) {
+            if (`#${playersTile}` == storyElement.modifiers[i].tileNumber && !storyElement.modifiers[i].encounterStoryElement.modifiers.hasPlayerSeenMe) {
+                storyTeller(storyElement.modifiers[i].encounterStoryElement);
+            }
+        }
+    }    
+// draw icons on tiles
+function drawIcons(storyElement) {
+    let tiles = document.querySelectorAll('[id^="tile"]');
+    for (let i = 0; i < tiles.length; i++) {
+        for (let j = 0; j < storyElement.modifiers.length; j++)
+        {
+            if (`#${tiles[i].id}` == storyElement.modifiers[j].tileNumber) {
+                tiles[i].style.position = 'relative';
+                storyElement.modifiers[j].icon.style.position = 'absolute';
+                tiles[i].appendChild(storyElement.modifiers[j].icon);
+            }
+        }
+    }
+}
 // TESTER. start game
-storyTeller(testDialogue);
+storyTeller(testExploration);
 
 // TO DO LIST.
-// incorporate exploration into the new system
+// add icons to exploration
 // redo the character creation using the new system
 // remove unnecessary shit
-// add icons to exploration
 // different shapes of exploration? (maybe by making a few divs a different-looking class, which looks different in the css) 
+
+// ---new map system---
+// the text of the event that sends you to exploration should be a regular event with type 'exploration'
+// it should be a couple of supplementary functions to activate exploration
+// exploration events can be just regular 'description' or whatever events
+// storyElement object just needs an extra THING to show whether it's a main story event or an exploration event, with tiles and whatever in [nextStoryElement]
+// put exploration events into their own js files separated by the area. use webpack!
