@@ -1,3 +1,5 @@
+let isPlayerExploring = false;
+let moveOn = true;
 // initialize spaces and buttons
 let top_bar = document.querySelector('.top_bar');
 let log_window = document.querySelector('.log');
@@ -43,11 +45,9 @@ Character.prototype.attack = function(selectedEnemy) {
                     log_window.appendChild(entry);
                 }
             });
-            while (image_window.firstChild) { image_window.removeChild(image_window.firstChild) };
-            listEnemies();
             enemies.forEach(enemy => {
                 enemy.status = '';
-            })
+            });
             if (selectedEnemy.currentHP > 0) {
                 let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus);
                 if (char1.equippedWeapon !== '') {
@@ -59,7 +59,6 @@ Character.prototype.attack = function(selectedEnemy) {
                 if (char1.equippedMisc !== '') {
                     attackRoll =+ attackRoll + this.equippedMisc.itemAttack;
                 }
-                console.log(attackRoll)
                 let extraComment = '';
                 let extraAttack = 0;
                 let extraDamage = 0;
@@ -93,7 +92,6 @@ Character.prototype.attack = function(selectedEnemy) {
                     entry.textContent = `${this.name} attacks ${selectedEnemy.name}${extraComment}! The attack hits and deals ${attackRoll + extraAttack + extraDamage - selectedEnemy.armorClass} damage!`;
                     log_window.appendChild(entry);
                     isHeDead(selectedEnemy);
-                    while (image_window.firstChild) { image_window.removeChild(image_window.firstChild) };
                     listEnemies();
                 } else {
                     let entry = document.createElement('p');
@@ -140,7 +138,7 @@ Object.setPrototypeOf(Dancer.prototype, Character.prototype);
 // character object
 let char1 = new Character('Dude', 25, 15, 100, 100, 'Normal Attack', '', '', '', []); 
 // enemies objects
-let goblin_grunt = new Monster('Goblin', 10, 20, 20, '');
+let goblin_grunt = new Monster('Goblin', 10, 40, 40, '');
 let goblin_fighter = new Monster('Goblin Fighter', 13, 25, 25, '');
 let goblin_shaman = new Monster('Goblin Shaman', 16, 30, 30, '');
 let goblin_chieftain = new Monster('Goblin Chieftain', 17, 40, 40, '');
@@ -159,7 +157,7 @@ function isHeDead(damagedEnemy) {
         enemies.splice(deadMonsterID, 1);
         if (enemies.length == 0) {
             isBattleOver('win');
-        };
+        }
     };
     if (char1.currentHP <= 0) {
         isBattleOver('lose');
@@ -167,7 +165,13 @@ function isHeDead(damagedEnemy) {
 }
 
 function listEnemies() {
-    while (image_window.firstChild) { image_window.removeChild(image_window.firstChild) };
+    let board = document.querySelector('#explorationBoard');
+    Array.from(image_window.children).forEach(entry => {
+        if (entry !== board) {
+            console.log(`deleting ${entry}?`)
+            image_window.removeChild(entry);
+        } 
+    })
     enemies.forEach((thisEnemy) => {
         let enemy_entry = document.createElement('p');
         let enemy_button = document.createElement('button');
@@ -179,8 +183,6 @@ function listEnemies() {
         image_window.appendChild(enemy_button);
     });
 }
-
-listEnemies();
 
 function selectEnemy(enemy) {
     enemyToAttack = enemy;
@@ -241,25 +243,6 @@ function startBattle(...encounterEnemies) {
     enemies = encounterEnemies;
     listEnemies();
 }
-// //finish battle
-// function isBattleOver(battleResult) {
-//     if (battleResult == 'win') {
-//         while (log_window.children.length > 1) { log_window.removeChild(log_window.firstChild) };
-//         enemyToAttack == undefined;
-//         top_bar.removeChild(top_bar.firstChild);
-//         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
-//         currentStoryPoint++;
-//         story[currentStoryPoint](0);
-//     } else {   
-//         let entry = document.createElement('p');
-//         entry.textContent = `You died!`;
-//         log_window.appendChild(entry);
-//         button_window.removeChild(attack_button);
-//         button_window.removeChild(move_button);
-//         button_window.removeChild(talk_button);
-//         button_window.removeChild(trade_button);
-//     }
-// }
 // ---inventory system---
 // create a dialog window when we click on inventory
 let inventoryDialog = document.createElement('dialog');
@@ -730,20 +713,73 @@ class storyElement {
         this.text = text;
         this.modifiers = modifiers;
         this.nextStoryElement = nextStoryElement;
+        storyElement.instances.push(this);
+    }
+    static instances = [];
+    static getAllInstances() {
+        return storyElement.instances;
     }
 }
+// update storyElements
+function newUpdateNames(answer) {
+    let allStoryElements = storyElement.getAllInstances();
+    for (let i = 0; i < allStoryElements.length; i++) {
+        switch (allStoryElements[i].type) {
+            case 'description':
+            case 'item':
+            case 'battle':
+            case 'choice':
+            case 'exploration':
+            case 'randomEncounter':
+            case 'form':
+                for (let j = 0; j < allStoryElements[i].text.length; j++) {
+                    allStoryElements[i].text[j] = allStoryElements[i].text[j].replaceAll('Dude', answer); 
+                }
+                break;
+            case 'dialogue':
+                for (let j = 0; j < allStoryElements[i].text.length; j++) {
+                    for (let k = 0; k < allStoryElements[i].text[j].consequenceText.length; k++) {
+                        allStoryElements[i].text[j].consequenceText[k] = allStoryElements[i].text[j].consequenceText[k].replaceAll('Dude', answer); 
+                    }
+                }
+                break;
+            case 'consequence':
+
+                break;
+        }
+    }
+    menu_window.textContent = menu_window.textContent.replace('a person', answer);
+}
 // objects of this class will be ALL that I have to edit
+let randomEvent2b = new storyElement(
+    'description',
+    ['Holy ballsacks, what a fight.', 'Welp, back to exploring.'],
+    undefined,
+    undefined
+)
+let randomEvent2a = new storyElement(
+    'battle',
+    ['Encounter 2 is pissed though.', 'Oh, it is super pissed.', 'Time to fight!'],
+    [goblin_grunt],
+    randomEvent2b
+)
 let randomEvent2 = new storyElement(
     'randomEncounter',
     ['You just found random encounter 2!'],
     {hasPlayerSeenMe: false},
+    randomEvent2a
+)
+let randomEvent1a = new storyElement(
+    'item',
+    ['This event is nice! It gives you an item!'],
+    magicArmor,
     undefined
 )
 let randomEvent1 = new storyElement(
     'randomEncounter',
     ['You just found random encounter 1!'],
     {hasPlayerSeenMe: false},
-    undefined
+    randomEvent1a
 )
 let testExploration = new storyElement(
     'exploration',
@@ -756,9 +792,9 @@ let testAfterDialogue = new storyElement(
     'consequence',
     [{dependency: 'StrangerFriendly', consequenceText: [
         'You hope that person winds what they are looking for.',
-        'Oh, well. You have your own needs to take care of.']},
+        'Oh, well. You have your own needs to take care of, Dude.']},
     {dependency: 'StrangerAnnoyed', consequenceText: [
-        'Well that person was a jerk.',
+        'Well that person was a jerk. Not like Dude.',
         'What a shit-faced poopster.']}],
     undefined,
     testExploration
@@ -766,12 +802,12 @@ let testAfterDialogue = new storyElement(
 let testDialogue = new storyElement(
     'dialogue',
     [{ lineNumber: 0, npcLine: 'You see a person. They approach, and say: "Hello!".', responses: 
-        [{ dialogueChoice: 'And hello to you kind person!', dialogueNextLine: 1, points: 1 },
-        { dialogueChoice: 'Hello, more like hyulo!', dialogueNextLine: 2, points: -1 }]},
-    { lineNumber: 1, npcLine: '"Nice to see a polite individual around these parts! How are you today?"', responses: 
+        [{ dialogueChoice: 'And hello to you kind person! My name is Dude.', dialogueNextLine: 1, points: 1 },
+        { dialogueChoice: 'Hello, more like hyulo! Dude here.', dialogueNextLine: 2, points: -1 }]},
+    { lineNumber: 1, npcLine: '"Well, hi, Dude. Nice to see a polite individual around these parts! How are you today?"', responses: 
         [{ dialogueChoice: 'I am doing well.', dialogueNextLine: 3, points: 1 },
         { dialogueChoice: 'I need help...', dialogueNextLine: 4, points: -1 }]},
-    { lineNumber: 2, npcLine: '"I do not speak this foul-sounding language of yours," they say, sounding concerned. "Are you okay?".', responses: 
+    { lineNumber: 2, npcLine: '"Dude, I do not speak this foul-sounding language of yours," they say, sounding concerned. "Are you okay?".', responses: 
         [{ dialogueChoice: 'I am doing well.', dialogueNextLine: 3, points: 1 },
         { dialogueChoice: 'I need help...', dialogueNextLine: 4, points: 0 }]},
     { lineNumber: 3, npcLine: '"Glad to hear it. Well, stay safe out there."', responses: 
@@ -821,21 +857,29 @@ let testBattle = new storyElement(
 ) 
 let testDescription = new storyElement(
     'description',
-    ['Hello!', 'This is a new introduction.', 'Fun, is it not?', 'Certainly is.'],
+    ['Hello, Dude!', 'This is a new introduction.', 'Fun, is it not?', 'Certainly is.'],
     undefined,
-    testBattle
+    testDialogue
+)
+let testNaming = new storyElement(
+    'form',
+    ['Hello!', 'Please enter your name.'],
+    undefined,
+    testDescription
 )
 // the function is ALWAYS static
 // function story(type, text, modifiers)
 function storyTeller(storyElement) {
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
-    if (storyElement.type !== 'dialogue' && storyElement.type !== 'consequence') {
-        textFlipper(storyElement, 0);
-    } else if (storyElement.type == 'dialogue') {
-        newDialogueMaker(storyElement, 0);
-    } else {
-        consequenceShower(storyElement, 0);
-    }
+    if (storyElement !== undefined) {
+        if (storyElement.type !== 'dialogue' && storyElement.type !== 'consequence') {
+            textFlipper(storyElement, 0);
+        } else if (storyElement.type == 'dialogue') {
+            newDialogueMaker(storyElement, 0);
+        } else {
+            consequenceShower(storyElement, 0);
+        }
+    } else {}
 }
 //--- supplementary functions
 // new continue button operator
@@ -861,7 +905,7 @@ function textFlipper(storyElement, loop, style) {
                         storyTeller(storyElement.nextStoryElement);
                         break;
                     case 'battle':
-                        newBattleStarter(storyElement, storyElement.modifiers);
+                        newBattleStarter(storyElement);
                         break;
                     case 'item':
                         grabItem(storyElement.modifiers);
@@ -876,11 +920,16 @@ function textFlipper(storyElement, loop, style) {
                         break;
                     case 'exploration':
                         newExploration(storyElement);
+                        isPlayerExploring = true;
                         break;
                     case 'randomEncounter':
                         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
                         storyElement.modifiers.hasPlayerSeenMe = true;
                         moveOn = true;
+                        storyTeller(storyElement.nextStoryElement);
+                        break;
+                    case 'form':
+                        newFormMaker(storyElement);
                         break;
                 }
             }
@@ -976,14 +1025,21 @@ function newChoice(storyElement) {
 }
 // new battle functions
 let storyAfterBattle = null;
-function newBattleStarter(storyElement, thisEncounterEnemies) {
-    thisEncounterEnemies.forEach((currentEnemy) => { currentEnemy.currentHP = currentEnemy.maxHP });
-    enemies = thisEncounterEnemies;
+function newBattleStarter(storyElement) {
+    storyElement.modifiers.forEach((currentEnemy) => { currentEnemy.currentHP = currentEnemy.maxHP });
+    enemies = storyElement.modifiers;
     storyAfterBattle = storyElement;
+    let board = document.querySelector('#explorationBoard');
+    board.style.display = 'none';
     listEnemies();
 }
 function isBattleOver(battleResult) {
     if (battleResult == 'win') {
+        if (isPlayerExploring == true) {
+            console.log('isbattleover win activated')
+            let board = document.querySelector('#explorationBoard');
+            board.style.display = 'grid';        
+        }    
         let entry = document.createElement('p');
         entry.textContent = 'You win the battle!';
         log_window.appendChild(entry);
@@ -991,7 +1047,7 @@ function isBattleOver(battleResult) {
         top_bar.removeChild(top_bar.firstChild);
         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
         storyTeller(storyAfterBattle.nextStoryElement);
-        storyAfterBattle = null;        
+        storyAfterBattle = null;    
     } else {
         let entry = document.createElement('p');
         entry.textContent = 'You died!';
@@ -1004,10 +1060,10 @@ function isBattleOver(battleResult) {
     }
 }
 // new exploration functions
-let moveOn = true;
 function newExploration(storyElement) {
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
     let board = document.createElement('div');
+    board.setAttribute('id', 'explorationBoard');
     board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
     image_window.appendChild(board);
     for (let i = 0; i < 126; i++) {
@@ -1101,18 +1157,32 @@ function drawIcons(storyElement) {
         }
     }
 }
+// new character creation function
+function newFormMaker(storyElement) {
+    let form_card = document.createElement('div');
+    let form = document.createElement('form');
+    let input = document.createElement('input');
+    let submit = document.createElement('input');
+    submit.setAttribute('type', 'submit');
+    input.setAttribute('type', 'text');
+    form.appendChild(input);
+    form.appendChild(submit);
+    form_card.appendChild(form);
+    main_window.appendChild(form_card);
+    submit.addEventListener('click', (event) => {
+        event.preventDefault();
+        answer = input.value;
+        char1.name = answer;
+        newUpdateNames(answer);
+        while (main_window.firstChild) { main_window.removeChild(main_window.firstChild); }
+        storyTeller(storyElement.nextStoryElement);
+    })
+}
 // TESTER. start game
-storyTeller(testExploration);
+storyTeller(testNaming);
 
 // TO DO LIST.
-// add icons to exploration
 // redo the character creation using the new system
 // remove unnecessary shit
-// different shapes of exploration? (maybe by making a few divs a different-looking class, which looks different in the css) 
-
-// ---new map system---
-// the text of the event that sends you to exploration should be a regular event with type 'exploration'
-// it should be a couple of supplementary functions to activate exploration
-// exploration events can be just regular 'description' or whatever events
-// storyElement object just needs an extra THING to show whether it's a main story event or an exploration event, with tiles and whatever in [nextStoryElement]
 // put exploration events into their own js files separated by the area. use webpack!
+// different shapes of exploration? (maybe by making a few divs a different-looking class, which looks different in the css) 
