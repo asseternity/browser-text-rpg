@@ -146,12 +146,50 @@ button:hover {
     grid-column: 5 / 6;
 }
 
-@media screen and (max-width:600px) {
+dialog {
+    background-color: var(--purple2);
+    color: white;
+    font-size: 85%;
+    max-width: 500px;
+}
+
+#closeButton, #closeButton2 {
+    margin-left:450px;
+    font-size:80%;
+}
+
+.stats_meter {
+    border: 1px solid white;
+    display: grid;
+    grid-template-columns: 50fr 50fr;
+}
+
+#stats_meter_evil {
+    margin-top: 15px;
+}
+
+#stats_line_evil, #stats_line_somber {
+    background-color: maroon;
+    padding-left: 5px;
+}
+
+#stats_line_benevolent, #stats_line_silly {
+    background-color: blue;
+    padding-left: 5px;
+}
+
+.image_window button {
+    margin: 5px;
+    width: 50px;
+    display: none;
+}
+
+@media screen and (max-width:768px) {
     .container {
         min-height: 100%;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: 50px 500px 250px 60px;
+        grid-template-rows: 50px 650px 250px 60px;
     }
     p:first-child {
         margin-top: 0;
@@ -163,6 +201,17 @@ button:hover {
     .image_window {
         grid-column: 1;
         grid-row: 2;
+        font-size: 80%;
+    }
+    #explorationBoard {
+        display: flex;
+        flex-direction: column;
+    }
+    #buttonsMovement {
+        max-width: 150px;
+    }
+    .image_window button {
+        display: inline;
     }
     .main_window {
         grid-column: 2;
@@ -175,22 +224,28 @@ button:hover {
         display: flex;
         flex-direction: row;
         justify-content: center;
-        gap: 10px;
+        gap: 5px;
     }
     .button_window button {
-        font-size: 100%;
+        font-size: 78%;
     }
     .log {
         grid-column: 1;
         grid-row: 3;
+        font-size: 80%;
     }
     .menu {
         grid-column: 2;
         grid-row: 3;
     }
-}
-
-dialog {
-    background-color: var(--purple2);
-    color: white;
+    dialog {
+        max-width: 300px;
+    }
+    #closeButton, #closeButton2 {
+        margin-left:250px;
+        font-size:80%;
+    }
+    .main_window input[type=text] {
+        width:120px;
+    }
 }

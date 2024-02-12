@@ -10,7 +10,7 @@ let button_window = document.querySelector('.button_window');
 let attack_button = document.querySelector('#attackButton');
 let special_button = document.querySelector('#specialButton');
 let inventory_button = document.querySelector('#inventoryButton');
-let trade_button = document.querySelector('#tradeButton');
+let stats_button = document.querySelector('#statsButton');
 // object constructor functions
 function Character(name, attackBonus, armorClass, currentHP, maxHP, specialAttack, equippedWeapon, equippedArmor, equippedMisc, inventory) {
     this.name = name;
@@ -43,11 +43,15 @@ Character.prototype.attack = function(selectedEnemy) {
                     isHeDead(enemy); 
                     let entry = document.createElement('p');
                     entry.textContent = `${enemy.name} is burning for 5 damage!`;
+                    entry.setAttribute('style','color:yellow');
                     log_window.appendChild(entry);
                 }
             });
             enemies.forEach(enemy => {
                 enemy.status = '';
+            });
+            Array.from(log_window.children).forEach((entry) => {
+                entry.setAttribute('style', 'color:white;');
             });
             if (selectedEnemy.currentHP > 0) {
                 let attackRoll = Math.floor((Math.random() * 20) + 1 + this.attackBonus);
@@ -95,6 +99,7 @@ Character.prototype.attack = function(selectedEnemy) {
                     selectedEnemy.currentHP -= attackRoll + extraAttack + extraDamage - selectedEnemy.armorClass;
                     let entry = document.createElement('p');
                     entry.textContent = `${this.name} attacks ${selectedEnemy.name}${extraComment}! The attack hits and deals ${attackRoll + extraAttack + extraDamage - selectedEnemy.armorClass} damage!`;
+                    entry.setAttribute('style','color:yellow');
                     log_window.appendChild(entry);
                     isHeDead(selectedEnemy);
                     listEnemies();
@@ -112,11 +117,13 @@ Character.prototype.attack = function(selectedEnemy) {
                     }
                     let entry = document.createElement('p');
                     entry.textContent = `${this.name} does a Healing Twirl, healing themself for ${healed} HP!`;
+                    entry.setAttribute('style','color:yellow');
                     log_window.appendChild(entry);
                     menuUpdater();
                 } else {
                     let entry = document.createElement('p');
                     entry.textContent = `${this.name} attacks ${selectedEnemy.name}! The attack misses!`;
+                    entry.setAttribute('style','color:yellow');
                     log_window.appendChild(entry);
                 }
                 if (enemies.length !== 0) { 
@@ -126,6 +133,7 @@ Character.prototype.attack = function(selectedEnemy) {
                         } else if (enemy.status == 'stunned') {
                             let entry = document.createElement('p');
                             entry.textContent = `${enemy.name} is stunned!`;
+                            entry.setAttribute('style','color:yellow');
                             log_window.appendChild(entry);
                         }
                     }); 
@@ -173,6 +181,7 @@ function isHeDead(damagedEnemy) {
     if (damagedEnemy.currentHP <= 0) {
         let entry = document.createElement('p');
         entry.textContent = `${damagedEnemy.name} dies!`;
+        entry.setAttribute('style','color:yellow');
         log_window.appendChild(entry);
         let deadMonsterID = enemies.findIndex(i => i.name == damagedEnemy.name);
         enemies.splice(deadMonsterID, 1);
@@ -218,10 +227,12 @@ Monster.prototype.counterattack = function() {
         menuUpdater();
         let entry = document.createElement('p');
         entry.textContent = `${this.name} attacks ${char1.name}! The attack hits and deals ${attackRoll - char1.armorClass} damage!`;
+        entry.setAttribute('style','color:yellow');
         log_window.appendChild(entry);
     } else {
         let entry = document.createElement('p');
         entry.textContent = `${this.name} attacks ${char1.name}! The attack misses!`;
+        entry.setAttribute('style','color:yellow');
         log_window.appendChild(entry);
     }
 }
@@ -236,19 +247,19 @@ function switchAttack(char) {
             attackIndex = (attackIndex + 1) % JanitorSpecials.length;
             char.specialAttack = JanitorSpecials[attackIndex];
             let entry = document.createElement('p');
-            entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
+            entry.textContent = `${char.name} is ready to use ${char.specialAttack}.`;
             log_window.appendChild(entry);
         } else if (char instanceof Accountant) {
             attackIndex = (attackIndex + 1) % AccountantSpecials.length;
             char.specialAttack = AccountantSpecials[attackIndex];
             let entry = document.createElement('p');
-            entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
+            entry.textContent = `${char.name} is ready to use ${char.specialAttack}.`;
             log_window.appendChild(entry);
         } else if (char instanceof Dancer) {
             attackIndex = (attackIndex + 1) % DancerSpecials.length;
             char.specialAttack = DancerSpecials[attackIndex];
             let entry = document.createElement('p');
-            entry.textContent = `${char.name} is ready to use his ${char.specialAttack}.`;
+            entry.textContent = `${char.name} is ready to use ${char.specialAttack}.`;
             log_window.appendChild(entry);
         }
     }
@@ -263,13 +274,117 @@ function startBattle(...encounterEnemies) {
     enemies = encounterEnemies;
     listEnemies();
 }
+// stats screen
+let statsDialog = document.createElement('dialog');
+statsDialog.innerHTML = `
+    <button id='closeButton2'>Close</button>
+    <div id='statsBox'>
+    <h2>Stats</h2>
+    <ul id ='statsList'>
+        <li id='stats_gender'>You do not remember your gender.</li>
+        <li id='stats_race'>You do not remember your race.</li>
+        <li id='stats_romantic_partner'>You do not remember who your romantic partner was.</li>
+        <li id='stats_cause_of_death'>You do not remember your cause of death.</li>
+        <li id='stats_evil_benevolent'>
+            <div class='stats_meter' id='stats_meter_evil'>
+                <div class='stats_line' id='stats_line_evil'>Evil</div>
+                <div class='stats_line' id='stats_line_benevolent'>Benevolent</div>
+            </div>
+        </li>
+        <li id='stats_somber_silly'>
+            <div class='stats_meter' id='stats_meter_somber'>
+                <div class='stats_line' id='stats_line_somber'>Somber</div>
+                <div class='stats_line' id='stats_line_silly'>Silly</div>
+            </div>
+        </li>
+    </ul>
+    </div>
+`;
+document.body.appendChild(statsDialog);
+stats_button.addEventListener('click', () => {
+    statsDialog.showModal();
+    let closeButton2 = document.querySelector('#closeButton2');
+    closeButton2.addEventListener('click', () => {
+        statsDialog.close();
+    })
+})
+// tracking and updating stats
+let playerBenevolentBalance = 0;
+let playerSillyBalance = 0;
+function statsLinesUpdater() {
+    let evilLine = document.querySelector('#stats_meter_evil');
+    let somberLine = document.querySelector('#stats_meter_somber');
+    evilLine.style.gridTemplateColumns = `${50-playerBenevolentBalance}fr ${50+playerBenevolentBalance}fr`;
+    somberLine.style.gridTemplateColumns = `${50-playerSillyBalance}fr ${50+playerSillyBalance}fr`;
+}
+function giveStats(stat, amount) {
+    switch (stat) {
+        case 'evil':
+            playerBenevolentBalance -= amount;
+            break;
+        case 'benevolent':
+            playerBenevolentBalance += amount;
+            break;
+        case 'somber':
+            playerSillyBalance -= amount;            
+            break;
+        case 'silly':
+            playerSillyBalance += amount;
+            break;
+    }
+    statsLinesUpdater();
+    statsFlagsUpdater();
+}
+function statsFlagsUpdater() {
+    let b15index = playerConsequences.findIndex(i => i == 'playerBenevolent15')
+    playerConsequences.splice(b15index, 1);
+    let b30index = playerConsequences.findIndex(i => i == 'playerBenevolent30')
+    playerConsequences.splice(b30index, 1);
+    let e15index = playerConsequences.findIndex(i => i == 'playerEvil15')
+    playerConsequences.splice(e15index, 1);
+    let e30index = playerConsequences.findIndex(i => i == 'playerEvil30')
+    playerConsequences.splice(e30index, 1);
+    let so15index = playerConsequences.findIndex(i => i == 'playerSomber15')
+    playerConsequences.splice(so15index, 1);
+    let so30index = playerConsequences.findIndex(i => i == 'playerSomber30')
+    playerConsequences.splice(so30index, 1);
+    let si15index = playerConsequences.findIndex(i => i == 'playerSilly15')
+    playerConsequences.splice(si15index, 1);
+    let si30index = playerConsequences.findIndex(i => i == 'playerSilly30')
+    playerConsequences.splice(si30index, 1);
+    if (playerBenevolentBalance > 14) {
+        playerConsequences.push('playerBenevolent15');
+        if (playerBenevolentBalance > 29) {
+            playerConsequences.push('playerBenevolent30');
+        }
+    };
+    if (playerBenevolentBalance < -14) {
+        playerConsequences.push('playerEvil15');
+        if (playerBenevolentBalance < -29) {
+            playerConsequences.push('playerEvil30');
+        }
+    };
+    if (playerSillyBalance > 14) {
+        playerConsequences.push('playerSilly15');
+        if (playerSillyBalance > 29) {
+            playerConsequences.push('playerSilly30');
+        }
+    };
+    if (playerSillyBalance < -14) {
+        playerConsequences.push('playerSomber15');
+        if (playerSillyBalance < -29) {
+            playerConsequences.push('playerSomber15');
+        }
+    };
+}
 // ---inventory system---
 // create a dialog window when we click on inventory
 let inventoryDialog = document.createElement('dialog');
-inventoryDialog.setAttribute('style','max-width:600px;')
+inventoryDialog.setAttribute('style','max-width:500px;')
 inventoryDialog.innerHTML = `
-    <button id='closeButton' style='margin-left:500px;font-size:80%;'>Close</button>
+    <button id='closeButton'>Close</button>
     <div id='inventoryBox'>
+        <h2>Inventory</h2>
         <div id='equippedBox'>
             Equipped weapon: <span id='equippedWeaponBox'></span>
             <br>
@@ -280,7 +395,7 @@ inventoryDialog.innerHTML = `
         <br>
         <br>
         <div id='allBox'>
-            Inventory:
+            Bag:
             <ul id='allList'>
             </ul>
         </div>
@@ -625,7 +740,7 @@ function storyTeller(storyElement) {
         }
     } else {}
 }
-//--- supplementary functions
+//--- supplementary functions ---
 // new continue button operator
 let announcement;
 function textFlipper(storyElement, loop, style) {
@@ -803,6 +918,9 @@ function isBattleOver(battleResult) {
         entry.textContent = 'You win the battle!';
         log_window.appendChild(entry);
         while (log_window.children.length > 2) { log_window.removeChild(log_window.firstChild) };
+        Array.from(log_window.children).forEach((entry) => {
+            entry.setAttribute('style', 'color:white;');
+        });
         top_bar.removeChild(top_bar.firstChild);
         while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
         storyTeller(storyAfterBattle.nextStoryElement);
@@ -815,7 +933,7 @@ function isBattleOver(battleResult) {
         button_window.removeChild(attack_button);
         button_window.removeChild(special_button);
         button_window.removeChild(inventory_button);
-        button_window.removeChild(trade_button);
+        button_window.removeChild(stats_button);
     }
 }
 // new exploration functions
@@ -823,15 +941,37 @@ function newExploration(storyElement) {
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
     let board = document.createElement('div');
     board.setAttribute('id', 'explorationBoard');
-    board.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
+    let boardUnder = document.createElement('div');
+    boardUnder.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
     image_window.appendChild(board);
+    board.appendChild(boardUnder);
     for (let i = 0; i < 126; i++) {
         let tile = document.createElement('div');
         tile.setAttribute('style','padding:5px;border:1px solid white;height:15px;width:15px;');
         tile.setAttribute('id', `tile${i}`);
-        board.appendChild(tile);
+        boardUnder.appendChild(tile);
     }
     drawIcons(storyElement);
+    // draw buttons for mobile
+    let buttonsMovement = document.createElement('div');
+    buttonsMovement.setAttribute('id', 'buttonsMovement');
+    board.appendChild(buttonsMovement);
+    let upButton = document.createElement('button');
+    upButton.setAttribute('id', 'upButton');
+    upButton.textContent = 'Up';
+    buttonsMovement.appendChild(upButton);
+    let downButton = document.createElement('button');
+    downButton.setAttribute('id', 'upButton');
+    downButton.textContent = 'Down';
+    buttonsMovement.appendChild(downButton);
+    let leftButton = document.createElement('button');
+    leftButton.setAttribute('id', 'upButton');
+    leftButton.textContent = 'Left';
+    buttonsMovement.appendChild(leftButton);
+    let rightButton = document.createElement('button');
+    rightButton.setAttribute('id', 'upButton');
+    rightButton.textContent = 'Right';
+    buttonsMovement.appendChild(rightButton);
     // circle inside the squares
     let circle = document.createElement('div');
     circle.setAttribute('style','position:absolute;background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
@@ -873,6 +1013,43 @@ function newExploration(storyElement) {
         }
         circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
     })
+    // buttons
+    upButton.addEventListener('click', () => {
+        let circleCollision = circle.getBoundingClientRect();
+        let boardCollision = board.getBoundingClientRect();
+        if (circleCollision.top - step > boardCollision.top && moveOn == true) {
+            circleY -= step;
+            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+        }
+        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+    });
+    downButton.addEventListener('click', () => {
+        let circleCollision = circle.getBoundingClientRect();
+        let boardCollision = board.getBoundingClientRect();
+        if (circleCollision.bottom + step < boardCollision.bottom && moveOn == true) {
+            circleY += step;
+            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+        }
+        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+});
+    leftButton.addEventListener('click', () => {
+        let circleCollision = circle.getBoundingClientRect();
+        let boardCollision = board.getBoundingClientRect();
+        if (circleCollision.left - step > boardCollision.left && moveOn == true) {
+            circleX -= step;
+            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+        }
+        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+});
+    rightButton.addEventListener('click', () => {
+        let circleCollision = circle.getBoundingClientRect();
+        let boardCollision = board.getBoundingClientRect();
+        if (circleCollision.right + step < boardCollision.right && moveOn == true) {
+            circleX += step;
+            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+        }
+        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+});
 }
 // when a player moves, it is triggered. returns "#tile30" type number
 function whichTileIsPlayerOn(circle) {
@@ -938,9 +1115,8 @@ function newFormMaker(storyElement) {
     })
 }
 // TESTER. start game
-storyTeller(testNaming);
+storyTeller(testExploration);
 
 // TO DO LIST.
-// last turn logs are yellow
-// what to use the final button for?
+// story
 // put exploration events into their own js files separated by the area. use webpack!
