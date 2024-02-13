@@ -937,119 +937,88 @@ function isBattleOver(battleResult) {
     }
 }
 // new exploration functions
+let circleX;
+let circleY;
 function newExploration(storyElement) {
+    // clear main window
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
+    // make board and boardUnder
     let board = document.createElement('div');
     board.setAttribute('id', 'explorationBoard');
     let boardUnder = document.createElement('div');
     boardUnder.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
     image_window.appendChild(board);
     board.appendChild(boardUnder);
+    // draw tiles
     for (let i = 0; i < 126; i++) {
         let tile = document.createElement('div');
         tile.setAttribute('style','padding:5px;border:1px solid white;height:15px;width:15px;');
         tile.setAttribute('id', `tile${i}`);
         boardUnder.appendChild(tile);
     }
+    // call drawIcons function
     drawIcons(storyElement);
-    // draw buttons for mobile
-    let buttonsMovement = document.createElement('div');
-    buttonsMovement.setAttribute('id', 'buttonsMovement');
-    board.appendChild(buttonsMovement);
-    let upButton = document.createElement('button');
-    upButton.setAttribute('id', 'upButton');
-    upButton.textContent = 'Up';
-    buttonsMovement.appendChild(upButton);
-    let downButton = document.createElement('button');
-    downButton.setAttribute('id', 'upButton');
-    downButton.textContent = 'Down';
-    buttonsMovement.appendChild(downButton);
-    let leftButton = document.createElement('button');
-    leftButton.setAttribute('id', 'upButton');
-    leftButton.textContent = 'Left';
-    buttonsMovement.appendChild(leftButton);
-    let rightButton = document.createElement('button');
-    rightButton.setAttribute('id', 'upButton');
-    rightButton.textContent = 'Right';
-    buttonsMovement.appendChild(rightButton);
-    // circle inside the squares
+    // draw the circle inside the squares
     let circle = document.createElement('div');
-    circle.setAttribute('style','position:absolute;background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
+    circle.setAttribute('id','circle');
+    circle.setAttribute('style','background-color:white;border:1px solid white;border-radius:50%; z-index:10; height: 17px; width: 17px;');
     circle.setAttribute('tabindex', '0');
-    let centerTile = document.querySelector('#tile50');
-    centerTile.appendChild(circle);
-    let circleX = 0;
-    let circleY = 0;
-    let step = 5;
-// WASD to move the circle
+    let startTile = document.querySelector('#tile120');
+    startTile.appendChild(circle);
+    // set circleX and circle Y to be the circle's current position
+    circleX = 0;
+    circleY = 0;    
+    // coordinates of bounding rectangle (**IT DOESN'T MOVE WHEN CIRCLE MOVES!**)
+    let initialCircleX = circle.getBoundingClientRect().x;
+    let initialCircleY = circle.getBoundingClientRect().y;
+
+    let currentCircleX = initialCircleX;
+    let currentCircleY = initialCircleY;
+    // WASD to move the circle
     document.addEventListener('keydown', (event) => {
-        let circleCollision = circle.getBoundingClientRect();
-        let boardCollision = board.getBoundingClientRect();
+        let step = 5;
+        let boardUnderCollision = boardUnder.getBoundingClientRect();
         switch (event.key) {
             case 'w':
-                if (circleCollision.top - step > boardCollision.top && moveOn == true) {
-                    circleY -= step;
+                //Transform (translate): CALCULATES FROM THE INITIAL POSITION! SO, initialCircle WILL BE 0, 0 for transform translate
+                if (currentCircleY - step > boardUnderCollision.top && moveOn == true) {
+                    currentCircleY -= step;
                     tileTriggers(whichTileIsPlayerOn(circle), storyElement);
                 }
                 break;
             case 'a':
-                if (circleCollision.left - step > boardCollision.left && moveOn == true) {
-                    circleX -= step;
+                if (currentCircleX - step > boardUnderCollision.left && moveOn == true) {
+                    currentCircleX -= step;
                     tileTriggers(whichTileIsPlayerOn(circle), storyElement);
                 }
                 break;
             case 's':
-                if (circleCollision.bottom + step < boardCollision.bottom && moveOn == true) {
-                    circleY += step;
+                if (currentCircleY < boardUnderCollision.bottom && moveOn == true) {
+                    currentCircleY += step;
                     tileTriggers(whichTileIsPlayerOn(circle), storyElement);
                 }
                 break;
             case 'd':
-                if (circleCollision.right + step < boardCollision.right && moveOn == true) {
-                    circleX += step;
+                if (currentCircleX < boardUnderCollision.right && moveOn == true) {
+                    currentCircleX += step;
                     tileTriggers(whichTileIsPlayerOn(circle), storyElement);
                 }
                 break;
         }
-        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
-    })
-    // buttons
-    upButton.addEventListener('click', () => {
-        let circleCollision = circle.getBoundingClientRect();
-        let boardCollision = board.getBoundingClientRect();
-        if (circleCollision.top - step > boardCollision.top && moveOn == true) {
-            circleY -= step;
-            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
-        }
-        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
+        let keyboardMoveY = currentCircleY - initialCircleY;
+        let keyboardMoveX = currentCircleX - initialCircleX;
+        circle.style.transform = `translate(${keyboardMoveX}px, ${keyboardMoveY}px)`;
     });
-    downButton.addEventListener('click', () => {
-        let circleCollision = circle.getBoundingClientRect();
-        let boardCollision = board.getBoundingClientRect();
-        if (circleCollision.bottom + step < boardCollision.bottom && moveOn == true) {
-            circleY += step;
-            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
-        }
-        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
-});
-    leftButton.addEventListener('click', () => {
-        let circleCollision = circle.getBoundingClientRect();
-        let boardCollision = board.getBoundingClientRect();
-        if (circleCollision.left - step > boardCollision.left && moveOn == true) {
-            circleX -= step;
-            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
-        }
-        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
-});
-    rightButton.addEventListener('click', () => {
-        let circleCollision = circle.getBoundingClientRect();
-        let boardCollision = board.getBoundingClientRect();
-        if (circleCollision.right + step < boardCollision.right && moveOn == true) {
-            circleX += step;
-            tileTriggers(whichTileIsPlayerOn(circle), storyElement);
-        }
-        circle.style.transform = `translate(${circleX}px, ${circleY}px)`;
-});
+    // clicking to move
+    // This works because it doesn't NEED a current position. it ALWAYS calculates from the starting one
+    boardUnder.addEventListener('click', (event) => {
+        let moveX = event.clientX - initialCircleX;        
+        let moveY = event.clientY - initialCircleY;
+        circle.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        tileTriggers(whichTileIsPlayerOn(circle), storyElement);
+        currentCircleX = event.clientX;
+        currentCircleY = event.clientY;
+    });
 }
 // when a player moves, it is triggered. returns "#tile30" type number
 function whichTileIsPlayerOn(circle) {
@@ -1117,6 +1086,44 @@ function newFormMaker(storyElement) {
 // TESTER. start game
 storyTeller(testExploration);
 
+//---main menu---
+let mainMenuDialog = document.createElement('dialog');
+mainMenuDialog.setAttribute('style','height:55%;width:100%;z-index:1000;overflow:hidden;');
+document.body.appendChild(mainMenuDialog);
+
+mainMenuDialog.innerHTML = 
+`
+<h2 style='text-align:center;margin-bottom:0;'>You Do God's Work</h2>   
+<div style='display:flex;flex-direction:column;justify-content:center;align-items:center;margin-top:50px;'>
+    <button id='startGameButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>Start game</button>
+    <button id='settingsButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>Settings</button>
+    <button id='aboutButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>About the creator</button>
+    <button id='contactButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>Contact me</button>
+</div>
+<br>
+<p style='color:white;'><i>Note: If you play on mobile, scroll to the bottom of the screen to see the action buttons.</i></p>
+`
+
+mainMenuDialog.showModal();
+
+let blackMenu = document.createElement('div');
+blackMenu.setAttribute('style', 'background-color:black;position:absolute;height:1000px;width:100%;z-index:500;');
+let container = document.querySelector('.container');
+container.appendChild(blackMenu);
+document.body.style.overflow = 'hidden';
+
+let startButton = document.querySelector('#startGameButton');
+startButton.addEventListener('click', () => {
+    blackMenu.remove();
+    mainMenuDialog.remove();
+    document.body.style.overflow = 'visible';
+})
+
 // TO DO LIST.
+// exploration movement --- collision on S and D
+// exploration movement --- mouse clicks if scrolled (calculated from initial point, which is now different -- offset by scrollX/Y?)
+// main menu - functionality
+// main menu - beauty!
+// main menu - animations
 // story
 // put exploration events into their own js files separated by the area. use webpack!
