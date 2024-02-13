@@ -178,18 +178,12 @@ dialog {
     padding-left: 5px;
 }
 
-.image_window button {
-    margin: 5px;
-    width: 50px;
-    display: none;
-}
-
 @media screen and (max-width:768px) {
     .container {
         min-height: 100%;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: 50px 650px 250px 60px;
+        grid-template-rows: 50px 580px 250px 65px;
     }
     p:first-child {
         margin-top: 0;
@@ -207,12 +201,6 @@ dialog {
         display: flex;
         flex-direction: column;
     }
-    #buttonsMovement {
-        max-width: 150px;
-    }
-    .image_window button {
-        display: inline;
-    }
     .main_window {
         grid-column: 2;
         grid-row: 2;
@@ -221,13 +209,13 @@ dialog {
     .button_window {
         grid-column: 1 / 3;
         grid-row: 4;
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
         gap: 5px;
     }
     .button_window button {
-        font-size: 78%;
+        font-size: 90%;
     }
     .log {
         grid-column: 1;
@@ -239,7 +227,7 @@ dialog {
         grid-row: 3;
     }
     dialog {
-        max-width: 300px;
+        max-width: 270px;
     }
     #closeButton, #closeButton2 {
         margin-left:250px;
