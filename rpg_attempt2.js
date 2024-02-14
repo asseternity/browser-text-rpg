@@ -628,7 +628,7 @@ let randomEvent1 = new storyElement(
 )
 let testExploration = new storyElement(
     'exploration',
-    ['You set out on the road again.', 'The forest is lush and hard to walk through.', 'The stranger was right - it will be hard to find your way here.'],
+    ['You set out on the road again.', 'The forest is lush and hard to walk through.', 'The stranger was right - it will be hard to find your way here.', '[Use WASD or click / tap on the map to move.]'],
     [{encounterStoryElement: randomEvent1, tileNumber: '#tile30', icon: iconTree},
     {encounterStoryElement: randomEvent2, tileNumber: '#tile100', icon: iconTree2}],
     undefined
@@ -937,8 +937,6 @@ function isBattleOver(battleResult) {
     }
 }
 // new exploration functions
-let circleX;
-let circleY;
 function newExploration(storyElement) {
     // clear main window
     while (main_window.firstChild) {main_window.removeChild(main_window.firstChild)};
@@ -947,6 +945,7 @@ function newExploration(storyElement) {
     board.setAttribute('id', 'explorationBoard');
     let boardUnder = document.createElement('div');
     boardUnder.setAttribute('style', 'border-collapse:collapse; margin:3px; display:inline-grid; grid-template-columns: repeat(6, 25px);')
+    boardUnder.setAttribute('id', 'boardUnder');
     image_window.appendChild(board);
     board.appendChild(boardUnder);
     // draw tiles
@@ -965,9 +964,6 @@ function newExploration(storyElement) {
     circle.setAttribute('tabindex', '0');
     let startTile = document.querySelector('#tile120');
     startTile.appendChild(circle);
-    // set circleX and circle Y to be the circle's current position
-    circleX = 0;
-    circleY = 0;    
     // coordinates of bounding rectangle (**IT DOESN'T MOVE WHEN CIRCLE MOVES!**)
     let initialCircleX = circle.getBoundingClientRect().x;
     let initialCircleY = circle.getBoundingClientRect().y;
@@ -993,13 +989,13 @@ function newExploration(storyElement) {
                 }
                 break;
             case 's':
-                if (currentCircleY < boardUnderCollision.bottom && moveOn == true) {
+                if (currentCircleY + step + 20 < boardUnderCollision.bottom && moveOn == true) {
                     currentCircleY += step;
                     tileTriggers(whichTileIsPlayerOn(circle), storyElement);
                 }
                 break;
             case 'd':
-                if (currentCircleX < boardUnderCollision.right && moveOn == true) {
+                if (currentCircleX + step + 18 < boardUnderCollision.right && moveOn == true) {
                     currentCircleX += step;
                     tileTriggers(whichTileIsPlayerOn(circle), storyElement);
                 }
@@ -1012,13 +1008,32 @@ function newExploration(storyElement) {
     // clicking to move
     // This works because it doesn't NEED a current position. it ALWAYS calculates from the starting one
     boardUnder.addEventListener('click', (event) => {
-        let moveX = event.clientX - initialCircleX;        
-        let moveY = event.clientY - initialCircleY;
+        console.log(whichTileDidYouClick(event.clientX, event.clientY));
+        let clickedTile = document.querySelector(`#${whichTileDidYouClick(event.clientX, event.clientY)}`);
+        let clickedTileBoundaries = clickedTile.getBoundingClientRect();
+        let moveX = clickedTileBoundaries.left + 4 - initialCircleX;
+        let moveY = clickedTileBoundaries.top + 4 - initialCircleY + window.scrollY;
         circle.style.transform = `translate(${moveX}px, ${moveY}px)`;
         tileTriggers(whichTileIsPlayerOn(circle), storyElement);
-        currentCircleX = event.clientX;
-        currentCircleY = event.clientY;
+        currentCircleX = clickedTileBoundaries.left + 4;
+        currentCircleY = clickedTileBoundaries.top + 4 + window.scrollY;
     });
+}
+// which tile did you click?
+function whichTileDidYouClick(clickX, clickY) {
+    let tiles = document.querySelectorAll('[id^="tile"]');
+    for (let i = 0; i < tiles.length; i++) {
+        let tileCollision = tiles[i].getBoundingClientRect();
+        if (
+            clickX < tileCollision.right &&
+            clickX > tileCollision.left &&
+            clickY < tileCollision.bottom &&
+            clickY > tileCollision.top 
+        ) {
+            return tiles[i].id;
+        }
+    }
+    return null;
 }
 // when a player moves, it is triggered. returns "#tile30" type number
 function whichTileIsPlayerOn(circle) {
@@ -1039,10 +1054,9 @@ function whichTileIsPlayerOn(circle) {
 }
 // compares the tile id from above and activates a storyElement
 function tileTriggers(playersTile, storyElement) {
-    // clear main window
-        while (main_window.firstChild) { main_window.removeChild(main_window.firstChild) };
-    // activate an event
         for (let i = 0; i < storyElement.modifiers.length; i++) {
+            // console.log(playersTile);
+            // console.log(storyElement.modifiers[i].tileNumber);
             if (`#${playersTile}` == storyElement.modifiers[i].tileNumber && !storyElement.modifiers[i].encounterStoryElement.modifiers.hasPlayerSeenMe) {
                 storyTeller(storyElement.modifiers[i].encounterStoryElement);
             }
@@ -1095,10 +1109,10 @@ mainMenuDialog.innerHTML =
 `
 <h2 style='text-align:center;margin-bottom:0;'>You Do God's Work</h2>   
 <div style='display:flex;flex-direction:column;justify-content:center;align-items:center;margin-top:50px;'>
-    <button id='startGameButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>Start game</button>
-    <button id='settingsButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>Settings</button>
-    <button id='aboutButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>About the creator</button>
-    <button id='contactButton' style='font-size:150%;display:block;margin:0 auto; margin-bottom:20px;'>Contact me</button>
+    <button id='startGameButton' style='font-size:150%;display:block;margin:0 auto; border: 1px solid silver; border-radius: 5px; margin-bottom:20px;width:250px;'>Start game</button>
+    <button id='settingsButton' style='font-size:150%;display:block;margin:0 auto; border: 1px solid silver; border-radius: 5px; margin-bottom:20px;width:250px;'>Settings</button>
+    <button id='aboutButton' style='font-size:150%;display:block;margin:0 auto; border: 1px solid silver; border-radius: 5px; margin-bottom:20px;width:250px;'>About the creator</button>
+    <button id='contactButton' style='font-size:150%;display:block;margin:0 auto; border: 1px solid silver; border-radius: 5px; margin-bottom:20px;width:250px;'>Contact me</button>
 </div>
 <br>
 <p style='color:white;'><i>Note: If you play on mobile, scroll to the bottom of the screen to see the action buttons.</i></p>
@@ -1120,8 +1134,6 @@ startButton.addEventListener('click', () => {
 })
 
 // TO DO LIST.
-// exploration movement --- collision on S and D
-// exploration movement --- mouse clicks if scrolled (calculated from initial point, which is now different -- offset by scrollX/Y?)
 // main menu - functionality
 // main menu - beauty!
 // main menu - animations
